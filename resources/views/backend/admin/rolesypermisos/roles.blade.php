@@ -160,10 +160,23 @@
 
     <script>
         $(document).ready(function () {
-            const ruta = "{{ url('/admin/roles/tabla') }}";
+            recargar();
+        });
+    </script>
+
+
+    <script>
+
+
+        function recargar(){
+            var ruta = "{{ url('/admin/roles/tabla') }}";
+
+            // Destruir DataTable si existe
+            if ($.fn.DataTable.isDataTable('#tabla')) {
+                $('#tabla').DataTable().destroy();
+            }
 
             $('#tablaDatatable').load(ruta, function () {
-                // Inicializar DataTable cuando el HTML ya está en el DOM
                 $('#tabla').DataTable({
                     paging: true,
                     lengthChange: true,
@@ -186,24 +199,16 @@
                         oPaginate: { sFirst: "Primero", sLast: "Último", sNext: "Siguiente", sPrevious: "Anterior" },
                         oAria: { sSortAscending: ": Activar para ordenar ascendente", sSortDescending: ": Activar para ordenar descendente" }
                     },
-
-                    // 👇 Esto coloca "Mostrar" a la IZQ y "Buscar" a la DER
                     dom:
                         "<'row align-items-center'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6 text-md-right'f>>" +
                         "tr" +
                         "<'row align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
                 });
 
-                // Opcional: inputs compactos y bonitos
                 $('#tabla_length select').addClass('form-control form-control-sm');
                 $('#tabla_filter input').addClass('form-control form-control-sm').css('display','inline-block');
             });
-
-        });
-    </script>
-
-
-    <script>
+        }
 
         function verInformacion(id){
             window.location.href="{{ url('/admin/roles/lista/permisos') }}/"+id;
@@ -292,10 +297,6 @@
                 });
         }
 
-        function recargar(){
-            var ruta = "{{ url('/admin/roles/tabla') }}";
-            $('#tablaDatatable').load(ruta);
-        }
     </script>
 
 

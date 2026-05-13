@@ -18,14 +18,12 @@ class UsuariosSeeder extends Seeder
             'nombre' => 'Giovany',
             'usuario' => 'giovany',
             'password' => bcrypt('1234'),
-            'activo' => 1,
         ])->assignRole('admin');
 
         Usuario::create([
             'nombre' => 'David',
             'usuario' => 'david',
             'password' => bcrypt('1234'),
-            'activo' => 1,
         ])->assignRole('inventario');
     }
 }

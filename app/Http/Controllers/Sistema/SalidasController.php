@@ -358,6 +358,8 @@ class SalidasController extends Controller
             $entrada->id_tipoproyecto_transferencia = $request->idproyecto;
             $entrada->save();
 
+
+
             foreach ($listado as $fila) {
 
                 // Detalle transferencia
@@ -375,12 +377,15 @@ class SalidasController extends Controller
                 $salida->cantidad_salida    = $fila->disponible;
                 $salida->save();
 
+                $infoFilaMaterial = Materiales::where('id', $fila->id_material)->first();
+
                 // Reingresar a bodega general via entradas_detalle
-                $entradaDetalle                  = new EntradasDetalle();
-                $entradaDetalle->id_entradas     = $entrada->id;
-                $entradaDetalle->id_material     = $fila->id_material;
+                $entradaDetalle                   = new EntradasDetalle();
+                $entradaDetalle->id_entradas      = $entrada->id;
+                $entradaDetalle->id_material      = $fila->id_material;
                 $entradaDetalle->cantidad_inicial = $fila->disponible;
-                $entradaDetalle->precio          = $fila->precio;
+                $entradaDetalle->precio           = $fila->precio;
+                $entradaDetalle->nombre           = $infoFilaMaterial->nombre;
                 $entradaDetalle->save();
             }
 

@@ -621,13 +621,16 @@ class ReportesController extends Controller
             }
             $idsSalidas = $query->orderBy('fecha', 'ASC')->pluck('id');
 
-            // salidas_detalle → entradas_detalle → material
+            // ── Conteo total de salidas ──────────────────────────────
+            $totalSalidas = $idsSalidas->count();
+
             $detalles = SalidasDetalle::with('entradaDetalle.material.unidadMedida')
                 ->whereIn('id_salida', $idsSalidas)
                 ->get();
 
             // Agrupar por material
-            $dataArray = [];
+            $dataArray      = [];
+            $sumaTotalCantidad = 0;
 
             foreach ($detalles as $det) {
                 $entDet = $det->entradaDetalle;
@@ -646,22 +649,30 @@ class ReportesController extends Controller
                     ];
                 }
 
-                $dataArray[$idMat]['cantidad'] += $det->cantidad_salida;
-                $dataArray[$idMat]['total']    += ($det->cantidad_salida * $entDet->precio);
-                $dataArray[$idMat]['precio']    = $entDet->precio;
+                $dataArray[$idMat]['cantidad']  += $det->cantidad_salida;
+                $dataArray[$idMat]['total']     += ($det->cantidad_salida * $entDet->precio);
+                $dataArray[$idMat]['precio']     = $entDet->precio;
+                $sumaTotalCantidad              += $det->cantidad_salida;
             }
 
             usort($dataArray, fn($a, $b) => strcmp($a['nombre'], $b['nombre']));
 
-            $granTotal = array_sum(array_column($dataArray, 'total'));
-            $granTotalFmt = number_format($granTotal, 4);
+            $granTotal            = array_sum(array_column($dataArray, 'total'));
+            $granTotalFmt         = number_format($granTotal, 4);
+            $sumaTotalCantidadFmt = number_format($sumaTotalCantidad, 2, '.', ',');
 
             $mpdf = new \Mpdf\Mpdf(['tempDir' => sys_get_temp_dir(), 'format' => 'LETTER']);
             $mpdf->SetTitle('Reporte de Materiales Entregados');
             $mpdf->showImageErrors = false;
 
             $tabla  = $encabezado;
-            $tabla .= "<p style='font-size:15px;'><span style='font-weight:bold;'>Proyecto:</span> {$infoProyecto->nombre}</p>";
+            $tabla .= "
+            <p style='font-size:15px;'>
+                <span style='font-weight:bold;'>Proyecto:</span> {$infoProyecto->nombre}
+            </p>
+            <p style='font-size:13px;'>
+                <span style='font-weight:bold;'>Total de salidas registradas:</span> $totalSalidas
+            </p>";
 
             $tabla .= "
         <table width='100%' id='tablaFor'>
@@ -692,8 +703,15 @@ class ReportesController extends Controller
 
             $tabla .= "
                 <tr>
-                    <td colspan='5' style='font-weight:bold; font-size:13px; text-align:right;
+                    <td colspan='3' style='font-weight:bold; font-size:13px; text-align:right;
                                             border-top:1.5px solid #000; padding-top:4px;'>
+                        TOTAL CANTIDAD:
+                    </td>
+                    <td style='font-weight:bold; font-size:13px; border-top:1.5px solid #000; padding-top:4px;'>
+                        $sumaTotalCantidadFmt
+                    </td>
+                    <td style='font-weight:bold; font-size:13px; text-align:right;
+                                border-top:1.5px solid #000; padding-top:4px;'>
                         TOTAL GENERAL:
                     </td>
                     <td style='font-weight:bold; font-size:13px; border-top:1.5px solid #000; padding-top:4px;'>
@@ -708,8 +726,7 @@ class ReportesController extends Controller
 
             $query = Salidas::with([
                 'detalle.entradaDetalle.material.unidadMedida',
-            ])
-                ->where('id_tipoproyecto', $idproy);
+            ])->where('id_tipoproyecto', $idproy);
 
             if (!$sinFecha) {
                 $query->whereBetween('fecha', [$start, $end]);
@@ -717,14 +734,23 @@ class ReportesController extends Controller
 
             $arraySalidas = $query->orderBy('fecha', 'ASC')->get();
 
-            $granTotal = 0;
+            // ── Conteo total de salidas ──────────────────────────────
+            $totalSalidas      = $arraySalidas->count();
+            $granTotal         = 0;
+            $sumaTotalCantidad = 0;
 
             $mpdf = new \Mpdf\Mpdf(['tempDir' => sys_get_temp_dir(), 'format' => 'LETTER']);
             $mpdf->SetTitle('Reporte de Materiales Entregados');
             $mpdf->showImageErrors = false;
 
             $tabla  = $encabezado;
-            $tabla .= "<p style='font-size:15px;'><span style='font-weight:bold;'>Proyecto:</span> {$infoProyecto->nombre}</p>";
+            $tabla .= "
+            <p style='font-size:15px;'>
+                <span style='font-weight:bold;'>Proyecto:</span> {$infoProyecto->nombre}
+            </p>
+            <p style='font-size:13px;'>
+                <span style='font-weight:bold;'>Total de salidas registradas:</span> $totalSalidas
+            </p>";
 
             foreach ($arraySalidas as $salida) {
 
@@ -757,7 +783,8 @@ class ReportesController extends Controller
                         <td style='font-weight:bold; width:15%; font-size:13px;'>Total ($)</td>
                     </tr>";
 
-                $subtotal = 0;
+                $subtotal         = 0;
+                $subtotalCantidad = 0;
 
                 foreach ($salida->detalle as $det) {
                     $entDet = $det->entradaDetalle;
@@ -770,8 +797,10 @@ class ReportesController extends Controller
                     $precio    = $entDet->precio ?? 0;
                     $total     = $cantidad * $precio;
 
-                    $granTotal += $total;
-                    $subtotal  += $total;
+                    $granTotal         += $total;
+                    $subtotal          += $total;
+                    $sumaTotalCantidad += $cantidad;
+                    $subtotalCantidad  += $cantidad;
 
                     $precioFmt = number_format($precio, 4);
                     $totalFmt  = number_format($total, 4);
@@ -787,15 +816,26 @@ class ReportesController extends Controller
                     </tr>";
                 }
 
-                $subtotalFmt = number_format($subtotal, 4);
+                $subtotalFmt         = number_format($subtotal, 4);
+                $subtotalCantidadFmt = number_format($subtotalCantidad, 2, '.', ',');
 
                 $tabla .= "
                     <tr>
-                        <td colspan='5' style='font-weight:bold; font-size:12px; text-align:right;
-                                               border-top:1px solid #000; padding-top:3px;'>
+                        <td colspan='2' style='border-top:1px solid #000;'></td>
+                        <td style='font-weight:bold; font-size:12px; text-align:right;
+                                   border-top:1px solid #000; padding-top:3px;'>
+                            Subtotal cantidad:
+                        </td>
+                        <td style='font-weight:bold; font-size:12px;
+                                   border-top:1px solid #000; padding-top:3px;'>
+                            $subtotalCantidadFmt
+                        </td>
+                        <td style='font-weight:bold; font-size:12px; text-align:right;
+                                   border-top:1px solid #000; padding-top:3px;'>
                             Subtotal:
                         </td>
-                        <td style='font-weight:bold; font-size:12px; border-top:1px solid #000; padding-top:3px;'>
+                        <td style='font-weight:bold; font-size:12px;
+                                   border-top:1px solid #000; padding-top:3px;'>
                             $ $subtotalFmt
                         </td>
                     </tr>
@@ -803,12 +843,21 @@ class ReportesController extends Controller
             </table><br>";
             }
 
-            $granTotalFmt = number_format($granTotal, 4);
+            $granTotalFmt         = number_format($granTotal, 4);
+            $sumaTotalCantidadFmt = number_format($sumaTotalCantidad, 2, '.', ',');
 
             $tabla .= "
         <table width='100%' style='margin-top:10px;'>
             <tbody>
                 <tr>
+                    <td style='font-weight:bold; font-size:14px; text-align:right;
+                                border-top:2px solid #000; padding-top:6px;'>
+                        TOTAL CANTIDAD:&nbsp;&nbsp;
+                    </td>
+                    <td style='font-weight:bold; font-size:14px; width:15%;
+                                border-top:2px solid #000; padding-top:6px;'>
+                        $sumaTotalCantidadFmt
+                    </td>
                     <td style='font-weight:bold; font-size:14px; text-align:right;
                                 border-top:2px solid #000; padding-top:6px;'>
                         TOTAL GENERAL:&nbsp;&nbsp;
@@ -1371,6 +1420,8 @@ class ReportesController extends Controller
         </tr>
     </table>";
 
+        $totalCantidad = 0;
+
         // ─── TIPO 1: JUNTOS ───────────────────────────────────────────
         if ($tipo == 1) {
 
@@ -1391,6 +1442,7 @@ class ReportesController extends Controller
 
             foreach ($detalles as $det) {
                 $idMat = $det->id_material;
+                $totalCantidad += $det->cantidad_inicial;
 
                 if (!isset($dataArray[$idMat])) {
                     $dataArray[$idMat] = [
@@ -1524,6 +1576,8 @@ class ReportesController extends Controller
                 $subtotal = 0;
 
                 foreach ($entrada->detalle as $det) {
+                    $totalCantidad += $det->cantidad_inicial;
+
                     $totalLinea  = $det->precio * $det->cantidad_inicial;
                     $granTotal  += $totalLinea;
                     $subtotal   += $totalLinea;
@@ -1579,6 +1633,9 @@ class ReportesController extends Controller
             </tbody>
         </table>";
         }
+
+
+        //return $totalCantidad;
 
         $stylesheet = file_get_contents('css/cssregistro.css');
         $mpdf->WriteHTML($stylesheet, 1);
@@ -1669,6 +1726,7 @@ class ReportesController extends Controller
 
     </table>";
 
+
         foreach ($arrayMaterial as $material) {
 
             $detallesEntrada = EntradasDetalle::with([
@@ -1696,6 +1754,7 @@ class ReportesController extends Controller
 
                 <td style='font-size:15px;
                            font-weight:bold;
+                           background:#eaeaea;
                            padding:6px;'>
 
                     MATERIAL:
@@ -1761,9 +1820,9 @@ class ReportesController extends Controller
                 $cantidadTotal += $cantidad;
                 $totalMaterial += $total;
 
-                $cantidadFmt = number_format($cantidad, 4, '.', ',');
+                $cantidadFmt = number_format($cantidad, 2, '.', ',');
                 $precioFmt = number_format($precio, 4);
-                $totalFmt = number_format($total, 4);
+                $totalFmt = number_format($total, 2);
 
                 $tabla .= "
 
@@ -1836,6 +1895,9 @@ class ReportesController extends Controller
 
         </table>";
         }
+
+
+
 
         $stylesheet = file_get_contents(public_path('css/cssregistro.css'));
 

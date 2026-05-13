@@ -24,6 +24,9 @@ return new class extends Migration
 
             $table->string('codigo', 100)->nullable();
 
+            // copia nombre material
+            $table->string('nombre', 300)->nullable();
+
             $table->foreign('id_entradas')->references('id')->on('entradas');
             $table->foreign('id_material')->references('id')->on('materiales');
         });

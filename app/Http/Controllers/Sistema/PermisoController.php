@@ -36,7 +36,7 @@ class PermisoController extends Controller
         $u->password = bcrypt($request->password);
 
         if ($u->save()) {
-            $role = Role::findById($request->rol, 'web');
+            $role = Role::findById($request->rol, 'admin');
             $u->assignRole($role);
             return ['success' => 2];
         } else {
@@ -79,7 +79,7 @@ class PermisoController extends Controller
             }
 
             // Buscar el rol con el guard correcto y sincronizar
-            $role = Role::findById($request->rol, 'web');
+            $role = Role::findById($request->rol, 'admin');
             $usuario->syncRoles($role);
 
             $usuario->save();
@@ -107,7 +107,7 @@ class PermisoController extends Controller
 
         Role::create([
             'name' => $request->nombre,
-            'guard_name' => 'web'
+            'guard_name' => 'admin'
         ]);
 
         return ['success' => 2];
@@ -120,7 +120,7 @@ class PermisoController extends Controller
             return ['success' => 1];
         }
 
-        Permission::create(['name' => $request->nombre, 'description' => $request->descripcion, 'guard_name' => 'web']);
+        Permission::create(['name' => $request->nombre, 'description' => $request->descripcion, 'guard_name' => 'admin']);
 
         return ['success' => 2];
     }

@@ -15,7 +15,7 @@ class Usuario extends Authenticatable
 
     protected $table = 'usuario';
     public $timestamps = false;
-    protected string $guard_name = 'web';
+    protected string $guard_name = 'admin';
     /**
      * The attributes that are mass assignable.
      *

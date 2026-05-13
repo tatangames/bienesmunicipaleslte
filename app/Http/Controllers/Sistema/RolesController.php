@@ -28,7 +28,7 @@ class RolesController extends Controller
     public function tablaRolesPermisos($id)
     {
         // Validar que el ID sea válido antes de buscar
-        $role = Role::findById($id, 'web'); // o el guard correcto
+        $role = Role::findById($id, 'admin'); // o el guard correcto
 
         if (!$role) {
             abort(404, 'Rol no encontrado');
@@ -41,8 +41,8 @@ class RolesController extends Controller
 
     public function borrarPermiso(Request $request){
 
-        $permission = Permission::findById($request->idpermiso, 'web');
-        $role = Role::findById($request->idrol, 'web');
+        $permission = Permission::findById($request->idpermiso, 'admin');
+        $role = Role::findById($request->idrol, 'admin');
 
         $role->revokePermissionTo($permission);
 
@@ -51,8 +51,8 @@ class RolesController extends Controller
 
     public function agregarPermiso(Request $request){
 
-        $role = Role::findById($request->idrol, 'web');
-        $permission = Permission::findById($request->idpermiso, 'web');
+        $role = Role::findById($request->idrol, 'admin');
+        $permission = Permission::findById($request->idpermiso, 'admin');
 
         $role->givePermissionTo($permission);
 
@@ -71,7 +71,7 @@ class RolesController extends Controller
 
     public function borrarRolGlobal(Request $request){
 
-        $role = Role::findById($request->idrol, 'web');
+        $role = Role::findById($request->idrol, 'admin');
 
         $role->delete();
 

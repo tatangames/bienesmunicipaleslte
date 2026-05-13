@@ -16,10 +16,10 @@ class RolesSeeder extends Seeder
     public function run()
     {
         // Administrador
-        $roleAdmin = Role::create(['name' => 'admin']);
+        $roleAdmin = Role::create(['name' => 'admin', 'guard_name' => 'admin']);
 
         // Inventario
-        $roleInventario = Role::create(['name' => 'inventario']);
+        $roleInventario = Role::create(['name' => 'inventario', 'guard_name' => 'admin']);
 
 
         // solo para administrador
