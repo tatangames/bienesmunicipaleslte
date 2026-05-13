@@ -23,10 +23,10 @@
                                 @php $cerrado = $dato->tipoproyecto && $dato->tipoproyecto->transferido == 1; @endphp
                                 <tr>
                                     <td>{{ $dato->id }}</td>
-                                    <td>{{ $dato->tipoproyecto->nombre ?? '—' }}</td>
+                                    <td>{{ $dato->tipoproyecto->nombre ?? '' }}</td>
                                     <td>{{ $dato->fecha_fmt }}</td>
-                                    <td>{{ $dato->factura ?? '—' }}</td>
-                                    <td>{{ $dato->descripcion ?? '—' }}</td>
+                                    <td>{{ $dato->factura ?? '' }}</td>
+                                    <td>{{ $dato->descripcion ?? '' }}</td>
                                     <td class="text-center">
                                         @if($dato->es_transferencia)
                                             <span class="badge badge-info">Sí</span>
@@ -34,7 +34,7 @@
                                             <span class="badge badge-secondary">No</span>
                                         @endif
                                     </td>
-                                    <td>{{ $dato->tipoproyectoTransferencia->nombre ?? '—' }}</td>
+                                    <td>{{ $dato->tipoproyectoTransferencia->nombre ?? '' }}</td>
                                     <td class="text-center">
                                         @if($cerrado)
                                             <span class="badge badge-danger">Cerrado</span>

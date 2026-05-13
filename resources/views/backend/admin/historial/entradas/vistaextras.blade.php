@@ -51,7 +51,7 @@
                             <div class="card-header">
                                 <h3 class="card-title">
                                     Entrada #{{ $entrada->id }} —
-                                    {{ $entrada->tipoproyecto->nombre ?? '—' }}
+                                    {{ $entrada->tipoproyecto->nombre ?? '' }}
                                 </h3>
                             </div>
                             <div class="card-body">
@@ -62,11 +62,11 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label class="text-muted">Factura</label>
-                                        <p><strong>{{ $entrada->factura ?? '—' }}</strong></p>
+                                        <p><strong>{{ $entrada->factura ?? '' }}</strong></p>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="text-muted">Descripción</label>
-                                        <p><strong>{{ $entrada->descripcion ?? '—' }}</strong></p>
+                                        <p><strong>{{ $entrada->descripcion ?? '' }}</strong></p>
                                     </div>
                                 </div>
                             </div>

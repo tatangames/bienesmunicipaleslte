@@ -396,7 +396,7 @@
             document.getElementById('formulario-editar-detalle').reset();
             $('#detalle-id-editar').val(id);
             $('#detalle-material-editar').val(material);
-            $('#detalle-codigo-editar').val(codigo !== '—' ? codigo : '');
+            $('#detalle-codigo-editar').val(codigo !== '' ? codigo : '');
             $('#detalle-precio-editar').val(precio);
             $('#modalEditarDetalle').modal('show');
         }

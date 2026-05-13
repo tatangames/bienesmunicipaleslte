@@ -54,7 +54,7 @@
                             <div class="card-header">
                                 <h3 class="card-title">
                                     Salida #{{ $salida->id }} —
-                                    {{ $salida->tipoproyecto->nombre ?? '—' }}
+                                    {{ $salida->tipoproyecto->nombre ?? '' }}
                                 </h3>
                             </div>
                             <div class="card-body">
@@ -65,7 +65,7 @@
                                     </div>
                                     <div class="col-md-9">
                                         <label class="text-muted">Descripción</label>
-                                        <p><strong>{{ $salida->descripcion ?? '—' }}</strong></p>
+                                        <p><strong>{{ $salida->descripcion ?? '' }}</strong></p>
                                     </div>
                                 </div>
                             </div>

@@ -146,8 +146,8 @@ class HistorialController extends Controller
             ->map(function ($item) {
                 return [
                     'id'             => $item->id,
-                    'codigo'         => $item->codigo ?? '—',
-                    'material'       => $item->material->nombre ?? '—',
+                    'codigo'         => $item->codigo ?? '',
+                    'material'       => $item->material->nombre ?? '',
                     'cantidad_inicial'=> $item->cantidad_inicial,
                     'precio'         => number_format($item->precio, 4),
                     'precio_raw'     => $item->precio,  // sin formato para el input
@@ -303,8 +303,8 @@ class HistorialController extends Controller
             ->get()
             ->map(function ($item) {
                 return [
-                    'codigo'         => $item->entradaDetalle->id_material ?? '—',
-                    'material'       => $item->entradaDetalle->material->nombre ?? '—',
+                    'codigo'         => $item->entradaDetalle->id_material ?? '',
+                    'material'       => $item->entradaDetalle->material->nombre ?? '',
                     'cantidad_salida'=> $item->cantidad_salida,
                     'precio'         => number_format($item->entradaDetalle->precio, 4),
                 ];

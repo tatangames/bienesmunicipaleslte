@@ -28,9 +28,9 @@
                                 @php $cerrado = $dato->tipoproyecto && $dato->tipoproyecto->transferido == 1; @endphp
                                 <tr>
                                     <td>{{ $dato->id }}</td>
-                                    <td>{{ $dato->tipoproyecto->nombre ?? '—' }}</td>
+                                    <td>{{ $dato->tipoproyecto->nombre ?? '' }}</td>
                                     <td>{{ $dato->fecha_fmt }}</td>
-                                    <td>{{ $dato->descripcion ?? '—' }}</td>
+                                    <td>{{ $dato->descripcion ?? '' }}</td>
                                     <td class="text-center">
                                         @if($dato->es_transferencia)
                                             <span class="badge badge-info">Sí</span>

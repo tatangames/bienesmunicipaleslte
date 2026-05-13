@@ -12,6 +12,7 @@ use App\Models\HistorialSalidasDeta;
 use App\Models\HistorialTransferido;
 use App\Models\HistorialTransferidoDetalle;
 use App\Models\Materiales;
+use App\Models\Salidas;
 use App\Models\SalidasDetalle;
 use App\Models\TipoProyecto;
 use App\Models\UnidadMedida;
@@ -81,9 +82,9 @@ class ReportesController extends Controller
             foreach ($listaEntrada as $entrada) {
 
                 $fechaFmt   = date("d-m-Y", strtotime($entrada->fecha));
-                $proyecto   = $entrada->tipoproyecto->nombre ?? '—';
-                $descripcion = $entrada->descripcion ?? '—';
-                $factura    = $entrada->factura ?? '—';
+                $proyecto   = $entrada->tipoproyecto->nombre ?? '';
+                $descripcion = $entrada->descripcion ?? '';
+                $factura    = $entrada->factura ?? '';
 
                 $tabla .= "
             <table width='100%' style='border-collapse:collapse; margin-bottom:4px;'>
@@ -120,9 +121,9 @@ class ReportesController extends Controller
                 $totalGeneral = 0;
 
                 foreach ($entrada->detalle as $det) {
-                    $codigo       = $det->codigo ?? '—';
-                    $nombreMat    = $det->material->nombre ?? '—';
-                    $medida       = $det->material->medida->nombre ?? '—';
+                    $codigo       = $det->codigo ?? '';
+                    $nombreMat    = $det->material->nombre ?? '';
+                    $medida       = $det->material->unidadMedida->nombre ?? '';
                     $cantidad     = $det->cantidad_inicial;
                     $precio       = $det->precio;
                     $total        = $cantidad * $precio;
@@ -169,7 +170,7 @@ class ReportesController extends Controller
             // ── SALIDAS ───────────────────────────────────────────────────
         } else {
 
-            $query = \App\Models\Salidas::with([
+            $query = Salidas::with([
                 'tipoproyecto',
                 'detalle.entradaDetalle.material.unidadMedida',
             ])->orderBy('fecha', 'ASC');
@@ -212,8 +213,8 @@ class ReportesController extends Controller
             foreach ($listaSalida as $salida) {
 
                 $fechaFmt    = date("d-m-Y", strtotime($salida->fecha));
-                $proyecto    = $salida->tipoproyecto->nombre ?? '—';
-                $descripcion = $salida->descripcion ?? '—';
+                $proyecto    = $salida->tipoproyecto->nombre ?? '';
+                $descripcion = $salida->descripcion ?? '';
 
                 $tabla .= "
             <table width='100%' style='border-collapse:collapse; margin-bottom:4px;'>
@@ -249,9 +250,9 @@ class ReportesController extends Controller
 
                 foreach ($salida->detalle as $det) {
                     $entDet       = $det->entradaDetalle;
-                    $codigo       = $entDet->codigo ?? '—';
-                    $nombreMat    = $entDet->material->nombre ?? '—';
-                    $medida       = $entDet->material->medida->nombre ?? '—';
+                    $codigo       = $entDet->codigo ?? '';
+                    $nombreMat    = $entDet->material->nombre ?? '';
+                    $medida       = $entDet->material->unidadMedida->nombre ?? '';
                     $cantidad     = $det->cantidad_salida;
                     $precio       = $entDet->precio ?? 0;
                     $total        = $cantidad * $precio;
@@ -385,8 +386,8 @@ class ReportesController extends Controller
                 $totalLinea   = $stock * $precioUnit;
                 $granTotal   += $totalLinea;
 
-                $codigo       = '—';
-                $medida       = $mat->unidadMedida->nombre ?? '—';  // ← corregido
+                $codigo       = '';
+                $medida       = $mat->unidadMedida->nombre ?? '';  // ← corregido
                 $precioFormat = number_format($precioUnit, 4);
                 $totalFormat  = number_format($totalLinea, 4);
 
@@ -445,9 +446,9 @@ class ReportesController extends Controller
 
                     if (!isset($porMaterial[$idMat])) {
                         $porMaterial[$idMat] = [
-                            'nombre'   => $det->material->nombre ?? '—',
-                            'medida'   => $det->material->unidadMedida->nombre ?? '—',  // ← corregido
-                            'codigo'   => $det->codigo ?? '—',
+                            'nombre'   => $det->material->nombre ?? '',
+                            'medida'   => $det->material->unidadMedida->nombre ?? '',  // ← corregido
+                            'codigo'   => $det->codigo ?? '',
                             'entradas' => 0,
                             'salidas'  => 0,
                             'precio'   => 0,
@@ -645,7 +646,7 @@ class ReportesController extends Controller
                         'nombre'   => $data->nombre,
                         'codigo'   => $data->codigo,
                         'cantidad' => $cantidad,
-                        'medida'   => $infoMedida ? $infoMedida->nombre : '—'
+                        'medida'   => $infoMedida ? $infoMedida->nombre : ''
                     ];
                 }
             }
@@ -707,7 +708,7 @@ class ReportesController extends Controller
 
                 $data->fecha = date("d-m-Y", strtotime($data->fecha));
 
-                $arrayDetalle = HistorialSalidasDeta::where('id_historial_salidas', $data->id)->get();
+                $arrayDetalle = HistorialSalidasD::where('id_historial_salidas', $data->id)->get();
 
                 foreach ($arrayDetalle as $deta){
                     $infoMate = Materiales::where('id', $deta->id_material)->first();
@@ -718,7 +719,7 @@ class ReportesController extends Controller
 
                     $deta->nombremate = $infoMate->nombre;
                     $deta->codigo     = $infoMate->codigo;
-                    $deta->unimedida  = $infoMedida ? $infoMedida->nombre : '—';
+                    $deta->unimedida  = $infoMedida ? $infoMedida->nombre : '';
                 }
 
                 $resultsBloque[$index]->detalle = $arrayDetalle;
@@ -1250,7 +1251,7 @@ class ReportesController extends Controller
                         'cantidad'       => $cantidad,
                         'precioUnitario' => number_format($precioUnitario, 2),
                         'total'          => number_format($totalMaterial, 2),
-                        'medida'         => $infoMedida ? $infoMedida->nombre : '—',
+                        'medida'         => $infoMedida ? $infoMedida->nombre : '',
                     ];
                 }
             }
@@ -1348,7 +1349,7 @@ class ReportesController extends Controller
 
                     $deta->nombremate    = $infoMate->nombre;
                     $deta->codigomate    = $infoMate->codigo;
-                    $deta->unimedida     = $infoMedida ? $infoMedida->nombre : '—';
+                    $deta->unimedida     = $infoMedida ? $infoMedida->nombre : '';
                     $deta->precioUnitFmt = number_format($deta->precio, 2);
                     $deta->totalFmt      = number_format($totalLinea, 2);
                 }
