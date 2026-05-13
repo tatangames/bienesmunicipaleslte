@@ -154,6 +154,12 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('admin.logout')
     Route::get('/admin/reporte/inventario/quehaentrado/proyecto', [ReportesController::class,'vistaQueHaEntradoProyecto'])->name('admin.reporte.inventario.entradaproyecto.index');
     Route::get('/admin/reporte/quehaentrado/proyectos/pdf/{idproy}/{desde}/{hasta}/{tipo}', [ReportesController::class,'pdfQueHaEntradoProyectos']);
 
+    // --- REPORTE / ENTRADA MATERIAL POR PROYECTO
+    Route::get('/admin/reporte/entradaproyecto/pormaterial/index', [ReportesController::class,'vistaEntradaPorMaterialProyecto'])->name('admin.reporte.entradamateria.proyecto.index');
+    Route::get('/admin/pdf/entradaproyecto/pormaterial/{desde}/{hasta}/{idmaterial}', [ReportesController::class,'pdfReporteMaterialesEntradaProyecto']);
+
+
+
 
 
 //}); // end auth

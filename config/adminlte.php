@@ -445,8 +445,11 @@ return [
                     'icon' => 'far fa-circle',
                     'route' => 'admin.reporte.salida.material.index',
                 ],
-
-
+                [
+                    'text' => 'Entrada Material Proyecto',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.reporte.entradamateria.proyecto.index',
+                ],
 
 
 
