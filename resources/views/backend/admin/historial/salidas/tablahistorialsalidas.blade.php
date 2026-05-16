@@ -19,9 +19,7 @@
                             @foreach($arraySalidas as $dato)
                                 @php $cerrado = $dato->tipoproyecto && $dato->tipoproyecto->transferido == 1; @endphp
                                 <tr>
-                                    <td class="text-center">
-                                        <span class="badge badge-dark">#{{ $dato->id }}</span>
-                                    </td>
+                                    <td>{{ $dato->id }}</td>
                                     <td>{{ $dato->tipoproyecto->nombre ?? '' }}</td>
                                     <td>{{ $dato->fecha_fmt }}</td>
                                     <td>{{ $dato->descripcion ?? '' }}</td>

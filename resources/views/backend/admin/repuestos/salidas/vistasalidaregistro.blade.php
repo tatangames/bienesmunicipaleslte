@@ -160,7 +160,7 @@
                                     <select class="form-control" id="select-proyecto">
                                         <option value="0" selected disabled>Seleccionar Proyecto</option>
                                         @foreach($arrayProyectos as $sel)
-                                            <option value="{{ $sel->id }}">{{ $sel->id }} - {{ $sel->nombre }}</option>
+                                            <option value="{{ $sel->id }}">{{ $sel->nombre }}</option>
                                         @endforeach
                                     </select>
                                 </div>

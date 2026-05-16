@@ -441,27 +441,15 @@ return [
             'can'     => 'sidebar.inventario',
             'submenu' => [
                 [
-                    'text' => 'Entrada por Proyecto',
+                    'text' => 'Entradas / Salidas',
                     'icon' => 'far fa-circle',
                     'route' => 'admin.reporte.inventario.entradaproyecto.index',
-                ],
-                [
-                    'text' => 'Salida por Proyecto',
-                    'icon' => 'far fa-circle',
-                    'route' => 'admin.reporte.inventario.salidaproyecto.index',
                 ],
                 [
                     'text' => 'Inventario Proyecto',
                     'icon' => 'far fa-circle',
                     'route' => 'admin.reporte.inventario.tengoporproyecto.index',
                 ],
-                [
-                    'text' => 'Proyecto Completado',
-                    'icon' => 'far fa-circle',
-                    'route' => 'admin.reporte.inventario.proyectocompletado.index',
-                ],
-
-
 
 
             ],

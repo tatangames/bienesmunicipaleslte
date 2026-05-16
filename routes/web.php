@@ -144,43 +144,36 @@ Route::middleware('auth:admin')->group(function () {
     // Ruta nueva para cargar materiales del proyecto cerrado
     Route::post('/admin/transferencia/materiales/cerrado', [SalidasController::class, 'materialesDisponiblesCerrado']);
 
+    // --- RESERVAS ---
+    Route::get('/admin/reservas/index', [ReservasController::class,'indexReservasPendientes'])->name('admin.reservas.index');
+    Route::post('/admin/reservas/listar', [ReservasController::class, 'listar']);
+    Route::post('/admin/reservas/despachar', [ReservasController::class, 'despachar']);
 
 
-    // --- REPORTES / ENTRADA Y SALIDAS ---
-    Route::get('/admin/entrada/reporte/vista', [ReportesController::class,'indexEntradaReporte'])->name('admin.entrada.reporte.index');
-    Route::get('admin/reporte/registro/{tipo}/{desde}/{hasta}', [ReportesController::class, 'reportePdfEntradaSalida']);
 
-    // --- REPORTES / INVENTARIO ---
-    Route::get('/admin/reporte/inventario', [ReportesController::class,'vistaParaReporteInventario'])->name('admin.reporte.inventario.index');
-    Route::get('/admin/reporte/inventario/pdf/{tipo}', [ReportesController::class,'reporteInventarioActual']);
 
-    // --- REPORTE / QUE HA SALIDO POR X PROYECTO
-    Route::get('/admin/reporte/inventario/quehasalido/proyecto', [ReportesController::class,'vistaQueHaSalidoProyecto'])->name('admin.reporte.inventario.salidaproyecto.index');
+    // --- REPORTE / ENTRADA POR PROYECTO
+    Route::get('/admin/reporte/inventario/quehaentrado/proyecto', [ReportesController::class,'vistaQueHaEntradoProyecto'])->name('admin.reporte.inventario.entradaproyecto.index');
+    Route::get('/admin/reporte/quehaentrado/proyectos/pdf/{idproy}/{desde}/{hasta}/{tipo}', [ReportesController::class,'pdfQueHaEntradoProyectos']);
+
+    // --- REPORTE / SALIDA POR PROYECTO
     Route::get('/admin/reporte/quehasalido/proyectos/pdf/{idproy}/{desde}/{hasta}/{tipo}', [ReportesController::class,'pdfQueHaSalidoProyectos']);
 
-    // --- REPORTE / INVENTARIO QUE MATERIALES TENGO POR X PROYECTO
+    // --- REPORTE / INVENTARIO PROYECTO
     Route::get('/admin/reporte/inventario/quetengopor/proyecto', [ReportesController::class,'vistaQueTengoPorProyecto'])->name('admin.reporte.inventario.tengoporproyecto.index');
     Route::get('/admin/reporte/quetengopor/proyectos/pdf/{idproy}', [ReportesController::class,'reporteQueTengoPorProyecto']);
+
+
+
+
+
+
+
+
 
     // --- REPORTE / VER LOS MATERIALES QUE SOBRARON DE UN PROYECTO COMPLETADO
     Route::get('/admin/reporte/inventario/sobranteterminado/proyecto', [ReportesController::class,'vistaProyectoCompletado'])->name('admin.reporte.inventario.proyectocompletado.index');
     Route::get('/admin/reporte/inventario/sobranteterminado/proy/{idtrans}', [ReportesController::class,'reporteProyectoTerminado']);
-
-    // --- REPORTE / SALIDA POR MATERIAL ---
-    Route::get('/admin/reporte/salida/pormaterial/index', [ReportesController::class,'vistaSalidaPorMaterial'])->name('admin.reporte.salida.material.index');
-    Route::get('/admin/pdf/salida/pormaterial/proyecto/{desde}/{hasta}/{materiales}', [ReportesController::class,'pdfReporteMaterialesSalidas']);
-
-    // --- REPORTE / QUE HA ENTRADO POR X PROYECTO
-    Route::get('/admin/reporte/inventario/quehaentrado/proyecto', [ReportesController::class,'vistaQueHaEntradoProyecto'])->name('admin.reporte.inventario.entradaproyecto.index');
-    Route::get('/admin/reporte/quehaentrado/proyectos/pdf/{idproy}/{desde}/{hasta}/{tipo}', [ReportesController::class,'pdfQueHaEntradoProyectos']);
-
-    // --- REPORTE / ENTRADA MATERIAL POR PROYECTO
-    Route::get('/admin/reporte/entradaproyecto/pormaterial/index', [ReportesController::class,'vistaEntradaPorMaterialProyecto'])->name('admin.reporte.entradamateria.proyecto.index');
-    Route::get('/admin/pdf/entradaproyecto/pormaterial/{desde}/{hasta}/{idmaterial}', [ReportesController::class,'pdfReporteMaterialesEntradaProyecto']);
-
-    Route::get('/admin/reservas/index', [ReservasController::class,'indexReservasPendientes'])->name('admin.reservas.index');
-    Route::post('/admin/reservas/listar', [ReservasController::class, 'listar']);
-    Route::post('/admin/reservas/despachar', [ReservasController::class, 'despachar']);
 
 
 }); // end auth

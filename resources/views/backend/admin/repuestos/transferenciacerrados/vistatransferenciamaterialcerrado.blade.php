@@ -136,7 +136,7 @@
                                 <select class="form-control" id="select-proyecto">
                                     <option value="0" selected disabled>Seleccionar Proyecto Cerrado…</option>
                                     @foreach($proyectosCerrados as $item)
-                                        <option value="{{ $item->id }}">{{ $item->id }} — {{ $item->nombre }}</option>
+                                        <option value="{{ $item->id }}">{{ $item->nombre }}</option>
                                     @endforeach
                                 </select>
                             </div>

@@ -135,9 +135,6 @@
     <script src="{{ asset('js/select2.min.js') }}" type="text/javascript"></script>
 
     <script>
-        $(document).ready(function() {
-            document.getElementById("divcc").style.display = "block";
-        });
 
         $('#select-proyecto').select2({
             theme: "bootstrap-5",

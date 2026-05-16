@@ -11,6 +11,7 @@ use App\Models\Salidas;
 use App\Models\SalidasDetalle;
 use App\Models\TipoProyecto;
 use App\Models\Transferencia;
+use App\Models\TransferenciaDetalle;
 use App\Models\UnidadMedida;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -336,12 +337,39 @@ class SalidasController extends Controller
             }
 
             // Guardar registro de cierre
-            $transferencia              = new Transferencia();
+            $transferencia                  = new Transferencia();
             $transferencia->id_tipoproyecto = $request->idproyecto;
-            $transferencia->fecha       = Carbon::parse($request->fecha);
-            $transferencia->descripcion = $request->descripcion;
-            $transferencia->documento   = $nomDocumento;
+            $transferencia->fecha           = Carbon::parse($request->fecha);
+            $transferencia->descripcion     = $request->descripcion;
+            $transferencia->documento       = $nomDocumento;
             $transferencia->save();
+
+            // ── Snapshot del inventario al momento del cierre ─────────────
+            $listado = DB::table('entradas_detalle as ed')
+                ->leftJoin(DB::raw('(
+                SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
+                FROM salidas_detalle GROUP BY id_entrada_detalle
+            ) as sd'), 'sd.id_entrada_detalle', '=', 'ed.id')
+                ->join('entradas as e', 'e.id', '=', 'ed.id_entradas')
+                ->where('e.id_tipoproyecto', $request->idproyecto)
+                ->selectRaw('
+                ed.id,
+                ed.precio,
+                ed.nombre,
+                (ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible
+            ')
+                ->havingRaw('disponible > 0')
+                ->get();
+
+            foreach ($listado as $fila) {
+                $det                     = new TransferenciaDetalle();
+                $det->id_transferencia   = $transferencia->id;
+                $det->id_entrada_detalle = $fila->id;
+                $det->cantidad_sobrante  = $fila->disponible;
+                $det->precio             = $fila->precio;
+                $det->nombre_material    = $fila->nombre;
+                $det->save();
+            }
 
             DB::commit();
             return ['success' => 3];
