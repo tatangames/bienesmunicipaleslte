@@ -5,12 +5,6 @@ namespace App\Http\Controllers\Sistema;
 use App\Http\Controllers\Controller;
 use App\Models\Entradas;
 use App\Models\EntradasDetalle;
-use App\Models\HistorialEntradas;
-use App\Models\HistorialEntradasDeta;
-use App\Models\HistorialSalidas;
-use App\Models\HistorialSalidasDeta;
-use App\Models\HistorialTransferido;
-use App\Models\HistorialTransferidoDetalle;
 use App\Models\Materiales;
 use App\Models\Salidas;
 use App\Models\SalidasDetalle;
@@ -725,6 +719,7 @@ class ReportesController extends Controller
 
             $query = Salidas::with([
                 'detalle.entradaDetalle.material.unidadMedida',
+                'proyectoTransferencia', // ← relación al proyecto destino
             ])->where('id_tipoproyecto', $idproy);
 
             if (!$sinFecha) {
@@ -756,8 +751,20 @@ class ReportesController extends Controller
                 $descripcion     = $salida->descripcion ?? '';
                 $esTransferencia = (int) $salida->es_transferencia === 1;
 
-                // ── Fila de alerta solo si es transferencia/cierre ──
+                // ── Badge de transferencia con destino ──
                 if ($esTransferencia) {
+
+                    if ($salida->id_tipoproyecto_transferencia) {
+                        // Fue a un proyecto específico
+                        $nombreDestino = $salida->proyectoTransferencia
+                            ? $salida->proyectoTransferencia->nombre
+                            : 'Proyecto #' . $salida->id_tipoproyecto_transferencia;
+                        $textoLabel = "TRANSFERENCIA &#8594; $nombreDestino";
+                    } else {
+                        // Salida general sin proyecto destino
+                        $textoLabel = "SALIDA GENERAL (Sin proyecto destino)";
+                    }
+
                     $tabla .= "
                 <table width='100%' style='margin-bottom:3px;'>
                     <tbody>
@@ -771,7 +778,7 @@ class ReportesController extends Controller
                                 padding:4px 8px;
                                 text-align:center;
                             '>
-                                SALIDA POR TRANSFERENCIA / CIERRE DE PROYECTO
+                                $textoLabel
                             </td>
                         </tr>
                     </tbody>
@@ -1595,7 +1602,7 @@ class ReportesController extends Controller
                                 padding:4px 8px;
                                 text-align:center;
                             '>
-                                &#9888; ENTRADA POR CIERRE DE PROYECTO: $nombreOrigen
+                                 ENTRADA POR CIERRE DE PROYECTO: $nombreOrigen
                             </td>
                         </tr>
                     </tbody>

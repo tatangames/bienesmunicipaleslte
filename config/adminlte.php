@@ -363,6 +363,11 @@ return [
                     'icon' => 'far fa-circle',
                     'route' => 'admin.transferencias.materiales.index',
                 ],
+                [
+                    'text' => 'Reservas Pendientes',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.reservas.index',
+                ],
             ],
         ],
 

@@ -18,8 +18,11 @@ return new class extends Migration
             $table->string('descripcion', 800)->nullable();
 
             $table->boolean('es_transferencia')->default(false);
+            // SABER A DONDE MANDE ESTE MATERIAL (X PROYECTO)
+            $table->bigInteger('id_tipoproyecto_transferencia')->unsigned()->nullable();
 
             $table->foreign('id_tipoproyecto')->references('id')->on('tipoproyecto');
+            $table->foreign('id_tipoproyecto_transferencia')->references('id')->on('tipoproyecto');
         });
     }
 

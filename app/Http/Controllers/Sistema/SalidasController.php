@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Entradas;
 use App\Models\EntradasDetalle;
 use App\Models\Materiales;
+use App\Models\Reserva;
 use App\Models\Salidas;
 use App\Models\SalidasDetalle;
 use App\Models\TipoProyecto;
@@ -251,6 +252,7 @@ class SalidasController extends Controller
             $salida->descripcion     = $request->descripcion;
             $salida->id_tipoproyecto = $request->proyecto;
             $salida->es_transferencia= 0;
+            $salida->id_tipoproyecto_transferencia = null;
             $salida->save();
 
             // ✅ Guardar detalle con cantidades agrupadas
@@ -354,22 +356,231 @@ class SalidasController extends Controller
 
     public function indexTransferenciasDeProyectosCerrados()
     {
-        $proyectosCerrados = TipoProyecto::where('transferido', 1)
-            ->orderBy('nombre')
-            ->get();
+        $proyectosCerrados = TipoProyecto::where('transferido', 1)->orderBy('nombre')->get();
+        $proyectosActivos  = TipoProyecto::where('transferido', 0)->orderBy('nombre')->get();
 
         return view('backend.admin.repuestos.transferenciacerrados.vistatransferenciamaterialcerrado', [
-            'proyectosCerrados' => $proyectosCerrados
+            'proyectosCerrados' => $proyectosCerrados,
+            'proyectosActivos'  => $proyectosActivos,
         ]);
     }
 
     public function retirarMaterialDeProyectosCerrados(Request $request)
     {
+        $rules = [
+            'fecha'           => 'required',
+            'proyecto_cerrado'=> 'required',
+            'tipo_destino'    => 'required',
+            'contenedorArray' => 'required',
+        ];
 
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return ['success' => 0];
+        }
 
+        DB::beginTransaction();
+
+        try {
+            $contenedor     = json_decode($request->contenedorArray, true);
+            $tipodestino    = $request->tipo_destino;
+            $proyectoCerrado = $request->proyecto_cerrado;
+            $proyectoDestino = $request->proyecto_destino;
+
+            if (empty($contenedor)) {
+                return ['success' => 1];
+            }
+
+            // ── TIPO: TRANSFERENCIA A PROYECTO ACTIVO ─────────────────────
+            if ($tipodestino === 'proyecto') {
+
+                // Cabecera salida del proyecto cerrado
+                $salida                                = new Salidas();
+                $salida->fecha                         = Carbon::parse($request->fecha);
+                $salida->descripcion                   = $request->descripcion;
+                $salida->id_tipoproyecto               = $proyectoCerrado;
+                $salida->es_transferencia              = 1;
+                $salida->id_tipoproyecto_transferencia = $proyectoDestino; // ← destino guardado
+
+                $salida->save();
+
+                // Cabecera entrada al proyecto destino
+                $entrada                                = new Entradas();
+                $entrada->id_tipoproyecto               = $proyectoDestino;
+                $entrada->fecha                         = Carbon::parse($request->fecha);
+                $entrada->descripcion                   = $request->descripcion;
+                $entrada->es_transferencia              = 1;
+                $entrada->id_tipoproyecto_transferencia = $proyectoCerrado;
+                $entrada->save();
+
+                foreach ($contenedor as $item) {
+                    $idEntradaDetalle = $item['infoIdEntradaDeta'];
+                    $cantidad         = (int) $item['infoCantidad'];
+
+                    // Verificar disponible libre (descontando reservas)
+                    $entradaDetalle = EntradasDetalle::find($idEntradaDetalle);
+                    if (!$entradaDetalle) {
+                        DB::rollback();
+                        return ['success' => 2];
+                    }
+
+                    $totalSalido    = SalidasDetalle::where('id_entrada_detalle', $idEntradaDetalle)->sum('cantidad_salida');
+                    $totalReservado = Reserva::where('id_entrada_detalle', $idEntradaDetalle)->where('despachado', 0)->sum('cantidad');
+                    $libre          = $entradaDetalle->cantidad_inicial - $totalSalido - $totalReservado;
+
+                    if ($cantidad > $libre) {
+                        DB::rollback();
+                        return [
+                            'success'          => 3,
+                            'nombre_material'  => $entradaDetalle->nombre,
+                            'cantidad_pedida'  => $cantidad,
+                            'disponible'       => $libre,
+                        ];
+                    }
+
+                    // Salida del proyecto cerrado
+                    $salidaDet                     = new SalidasDetalle();
+                    $salidaDet->id_salida          = $salida->id;
+                    $salidaDet->id_entrada_detalle = $idEntradaDetalle;
+                    $salidaDet->cantidad_salida    = $cantidad;
+                    $salidaDet->save();
+
+                    // Entrada al proyecto destino
+                    $infoMaterial = Materiales::find($entradaDetalle->id_material);
+
+                    $entradaDet                   = new EntradasDetalle();
+                    $entradaDet->id_entradas      = $entrada->id;
+                    $entradaDet->id_material      = $entradaDetalle->id_material;
+                    $entradaDet->cantidad_inicial = $cantidad;
+                    $entradaDet->precio           = $entradaDetalle->precio;
+                    $entradaDet->nombre           = $infoMaterial ? $infoMaterial->nombre : $entradaDetalle->nombre;
+                    $entradaDet->save();
+                }
+
+                // ── TIPO: SALIDA GENERAL ──────────────────────────────────────
+            } elseif ($tipodestino === 'general') {
+
+                // Cabecera salida sin proyecto destino
+                $salida                                = new Salidas();
+                $salida->fecha                         = Carbon::parse($request->fecha);
+                $salida->descripcion                   = $request->descripcion;
+                $salida->id_tipoproyecto               = $proyectoCerrado;
+                $salida->es_transferencia              = 1;
+                $salida->id_tipoproyecto_transferencia = $proyectoDestino; // ← destino guardado
+                $salida->save();
+
+                foreach ($contenedor as $item) {
+                    $idEntradaDetalle = $item['infoIdEntradaDeta'];
+                    $cantidad         = (int) $item['infoCantidad'];
+
+                    $entradaDetalle = EntradasDetalle::find($idEntradaDetalle);
+                    if (!$entradaDetalle) {
+                        DB::rollback();
+                        return ['success' => 2];
+                    }
+
+                    $totalSalido    = SalidasDetalle::where('id_entrada_detalle', $idEntradaDetalle)->sum('cantidad_salida');
+                    $totalReservado = Reserva::where('id_entrada_detalle', $idEntradaDetalle)->where('despachado', 0)->sum('cantidad');
+                    $libre          = $entradaDetalle->cantidad_inicial - $totalSalido - $totalReservado;
+
+                    if ($cantidad > $libre) {
+                        DB::rollback();
+                        return [
+                            'success'         => 3,
+                            'nombre_material' => $entradaDetalle->nombre,
+                            'cantidad_pedida' => $cantidad,
+                            'disponible'      => $libre,
+                        ];
+                    }
+
+                    $salidaDet                     = new SalidasDetalle();
+                    $salidaDet->id_salida          = $salida->id;
+                    $salidaDet->id_entrada_detalle = $idEntradaDetalle;
+                    $salidaDet->cantidad_salida    = $cantidad;
+                    $salidaDet->save();
+                }
+
+                // ── TIPO: RESERVA ─────────────────────────────────────────────
+            } elseif ($tipodestino === 'reserva') {
+
+                foreach ($contenedor as $item) {
+                    $idEntradaDetalle = $item['infoIdEntradaDeta'];
+                    $cantidad         = (int) $item['infoCantidad'];
+
+                    $entradaDetalle = EntradasDetalle::find($idEntradaDetalle);
+                    if (!$entradaDetalle) {
+                        DB::rollback();
+                        return ['success' => 2];
+                    }
+
+                    $totalSalido    = SalidasDetalle::where('id_entrada_detalle', $idEntradaDetalle)->sum('cantidad_salida');
+                    $totalReservado = Reserva::where('id_entrada_detalle', $idEntradaDetalle)->where('despachado', 0)->sum('cantidad');
+                    $libre          = $entradaDetalle->cantidad_inicial - $totalSalido - $totalReservado;
+
+                    if ($cantidad > $libre) {
+                        DB::rollback();
+                        return [
+                            'success'         => 3,
+                            'nombre_material' => $entradaDetalle->nombre,
+                            'cantidad_pedida' => $cantidad,
+                            'disponible'      => $libre,
+                        ];
+                    }
+
+                    $reserva                    = new Reserva();
+                    $reserva->id_entrada_detalle = $idEntradaDetalle;
+                    $reserva->id_tipoproyecto   = $proyectoCerrado;
+                    $reserva->cantidad          = $cantidad;
+                    $reserva->descripcion       = $request->descripcion;
+                    $reserva->fecha_reserva     = Carbon::parse($request->fecha);
+                    $reserva->despachado        = 0;
+                    $reserva->save();
+                }
+
+            } else {
+                return ['success' => 0];
+            }
+
+            DB::commit();
+            return ['success' => 10];
+
+        } catch (\Throwable $e) {
+            Log::error('retirarMaterialDeProyectosCerrados: ' . $e);
+            DB::rollback();
+            return ['success' => 99];
+        }
     }
 
+    public function materialesDisponiblesCerrado(Request $request)
+    {
+        $idProyecto = $request->id_proyecto;
 
+        $materiales = DB::table('entradas_detalle as ed')
+            ->join('entradas as e', 'e.id', '=', 'ed.id_entradas')
+            ->join('materiales as m', 'm.id', '=', 'ed.id_material')
+            ->leftJoin('unidadmedida as um', 'um.id', '=', 'm.id_medida') // leftJoin por si id_medida es nullable
+            ->leftJoin(DB::raw('(
+            SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
+            FROM salidas_detalle GROUP BY id_entrada_detalle
+        ) as sd'), 'sd.id_entrada_detalle', '=', 'ed.id')
+            ->leftJoin(DB::raw('(
+            SELECT id_entrada_detalle, SUM(cantidad) as total_reservado
+            FROM reservas WHERE despachado = 0 GROUP BY id_entrada_detalle
+        ) as r'), 'r.id_entrada_detalle', '=', 'ed.id')
+            ->where('e.id_tipoproyecto', $idProyecto)
+            ->selectRaw('
+            ed.id as id_entrada_detalle,
+            m.nombre,
+            COALESCE(um.nombre, "—") as medida,
+            (ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible,
+            COALESCE(r.total_reservado, 0) as reservado,
+            (ed.cantidad_inicial - COALESCE(sd.total_salido, 0) - COALESCE(r.total_reservado, 0)) as libre
+        ')
+            ->havingRaw('disponible > 0')
+            ->get();
+
+        return ['success' => 1, 'materiales' => $materiales];
+    }
 
 
 }

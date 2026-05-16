@@ -13,6 +13,7 @@ use App\Http\Controllers\Sistema\TipoProyectoController;
 use App\Http\Controllers\Sistema\SalidasController;
 use App\Http\Controllers\Sistema\HistorialController;
 use App\Http\Controllers\Sistema\ReportesController;
+use App\Http\Controllers\Sistema\ReservasController;
 
 
 Route::get('/', [LoginController::class,'vistaLoginForm'])->name('login.admin');
@@ -110,7 +111,7 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/admin/buscar/material/disponibilidad', [SalidasController::class, 'infoBodegaMaterialDetalleFila']);
 
 
-    // --- TRANSFERENCIAS ---
+    // --- CIERRE DE PROYECTOS ---
     Route::get('/admin/cierre/proyectos', [SalidasController::class,'indexTransferencias'])->name('admin.transferencias.index');
     Route::post('/admin/generar/salida/transferencia',  [SalidasController::class,'generarSalidaTransferencia']);
 
@@ -140,7 +141,8 @@ Route::middleware('auth:admin')->group(function () {
     // --- TRANSFERENCIA DE MATERIALES DE PROYECTOS CERRADOS ---
     Route::get('/admin/transferencia/material/proyectoscerrados', [SalidasController::class,'indexTransferenciasDeProyectosCerrados'])->name('admin.transferencias.materiales.index');
     Route::post('/admin/transferencia/material/xproyecto', [SalidasController::class,'retirarMaterialDeProyectosCerrados']);
-
+    // Ruta nueva para cargar materiales del proyecto cerrado
+    Route::post('/admin/transferencia/materiales/cerrado', [SalidasController::class, 'materialesDisponiblesCerrado']);
 
 
 
@@ -176,8 +178,9 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/reporte/entradaproyecto/pormaterial/index', [ReportesController::class,'vistaEntradaPorMaterialProyecto'])->name('admin.reporte.entradamateria.proyecto.index');
     Route::get('/admin/pdf/entradaproyecto/pormaterial/{desde}/{hasta}/{idmaterial}', [ReportesController::class,'pdfReporteMaterialesEntradaProyecto']);
 
-
-
+    Route::get('/admin/reservas/index', [ReservasController::class,'indexReservasPendientes'])->name('admin.reservas.index');
+    Route::post('/admin/reservas/listar', [ReservasController::class, 'listar']);
+    Route::post('/admin/reservas/despachar', [ReservasController::class, 'despachar']);
 
 
 }); // end auth

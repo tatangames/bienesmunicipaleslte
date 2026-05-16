@@ -29,5 +29,9 @@ class Salidas extends Model
         //         'id'                  → PK en la tabla salidas
     }
 
-
+    // Model Salidas.php
+    public function proyectoTransferencia()
+    {
+        return $this->belongsTo(Tipoproyecto::class, 'id_tipoproyecto_transferencia');
+    }
 }
