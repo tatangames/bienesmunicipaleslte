@@ -185,7 +185,7 @@
         formData.append('usuario', usuario);
         formData.append('password', password);
 
-        axios.post(urlAdmin+'/login', formData, {
+        axios.post(urlAdmin+'/obradebanco.com/login', formData, {
         })
             .then((response) => {
                 closeLoading();

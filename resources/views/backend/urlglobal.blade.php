@@ -1,6 +1,6 @@
 <!-- URL GLOBAL PETICIONES POST          /xxxx.com       -->
 <script type="text/javascript">
-    var urlAdmin = "";
+    var urlAdmin = "/obradebanco.com";
 </script>
 
 <!-- ICONO GLOBAL DE LAS PESTAÑAS -->
