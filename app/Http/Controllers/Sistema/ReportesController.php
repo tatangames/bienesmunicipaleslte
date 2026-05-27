@@ -4089,7 +4089,6 @@ padding:5px 4px; background:#d9e1f2; text-align:center;";
 
 
 
-
     public function form001ReservaPreview(Request $request)
     {
         $logoalcaldia       = 'images/logo.png';
@@ -4097,8 +4096,8 @@ padding:5px 4px; background:#d9e1f2; text-align:center;";
         $fechaFormat        = Carbon::parse($request->fecha)->format('d/m/Y');
 
         $numero          = $request->numero          ?? '';
-        $nombreOrigen    = $request->nombre_origen   ?? '';  // proyecto cerrado seleccionado
-        $proyectoFormul  = $request->proyecto_formul ?? '';  // proyecto en formulación
+        $nombreOrigen    = $request->nombre_origen   ?? '';
+        $proyectoFormul  = $request->proyecto_formul ?? '';
         $justificacion   = $request->justificacion   ?? '';
         $depto           = $request->depto           ?? '';
         $nombreSolic     = $request->nombre          ?? '';
@@ -4106,42 +4105,113 @@ padding:5px 4px; background:#d9e1f2; text-align:center;";
         $observaciones   = $request->observaciones   ?? '';
         $materiales      = json_decode($request->materiales, true) ?? [];
 
-        $rows      = [];
-        $porCodigo = [];
-
+        // ════════════════════════════════════════════════════════════════
+        // PASO 1 — Agrupar items iguales (mismo id_entrada_detalle + precio)
+        // ════════════════════════════════════════════════════════════════
+        $agrupado = [];
         foreach ($materiales as $mat) {
             $idEntDet = $mat['id_entrada_detalle'] ?? null;
-            $codigo   = '—';
-            $medida   = '—';
-            $precio   = 0;
-
-            if ($idEntDet) {
-                $entDet = EntradasDetalle::with([
-                    'material.unidadMedida',
-                    'material.objetoEspecifico',
-                ])->find($idEntDet);
-
-                if ($entDet) {
-                    $codigo = $entDet->material?->objetoEspecifico?->codigo
-                        ?? $entDet->codigo ?? '—';
-                    $medida = $entDet->material?->unidadMedida?->nombre ?? '—';
-                    $precio = $entDet->precio ?? 0;
-                }
-            }
+            if (!$idEntDet) continue;
 
             $cantidad = (int) ($mat['cantidad'] ?? 0);
-            $subtotal = $cantidad * $precio;
+            if ($cantidad <= 0) continue;
 
-            $cod = $codigo;
-            if (!isset($porCodigo[$cod])) $porCodigo[$cod] = 0;
-            $porCodigo[$cod] += $subtotal;
+            // Cargar detalle para obtener precio real (no confiar en el del request)
+            $entDet = EntradasDetalle::with([
+                'material.unidadMedida',
+                'material.objetoEspecifico',
+            ])->find($idEntDet);
+
+            if (!$entDet) continue;
+
+            $precio = (float) ($entDet->precio ?? 0);
+            // Llave: id_entrada_detalle + precio (4 decimales)
+            $key = $idEntDet . '|' . number_format($precio, 4, '.', '');
+
+            if (!isset($agrupado[$key])) {
+                $agrupado[$key] = [
+                    'id_entrada_detalle' => $idEntDet,
+                    'entDet'             => $entDet,
+                    'nombre'             => $mat['nombre'] ?? ($entDet->nombre ?? '—'),
+                    'precio'             => $precio,
+                    'cantidad'           => 0,
+                ];
+            }
+            $agrupado[$key]['cantidad'] += $cantidad;
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // PASO 2 — Validar stock disponible
+        // ════════════════════════════════════════════════════════════════
+        $errores = [];
+        foreach ($agrupado as $g) {
+            $idEntDet = $g['id_entrada_detalle'];
+            $entDet   = $g['entDet'];
+
+            $cantidadInicial = (int) $entDet->cantidad_inicial;
+
+            // Salidas registradas
+            $totalSalidas = (int) \DB::table('salidas_detalle')
+                ->where('id_entrada_detalle', $idEntDet)
+                ->sum('cantidad_salida');
+
+            // Reservas vigentes (no despachadas aún)
+            $totalReservas = (int) \DB::table('reservas')
+                ->where('id_entrada_detalle', $idEntDet)
+                ->where('despachado', false)
+                ->sum('cantidad');
+
+            $disponible = $cantidadInicial - $totalSalidas - $totalReservas;
+
+            if ($g['cantidad'] > $disponible) {
+                $errores[] = [
+                    'nombre'     => $g['nombre'],
+                    'solicitado' => $g['cantidad'],
+                    'disponible' => max(0, $disponible),
+                    'inicial'    => $cantidadInicial,
+                    'salidas'    => $totalSalidas,
+                    'reservas'   => $totalReservas,
+                ];
+            }
+        }
+
+        if (!empty($errores)) {
+            $this->renderErrorStockPdf($errores);
+            return;
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // PASO 3 — Construir filas + totalizar por OBJETO ESPECÍFICO
+        // ════════════════════════════════════════════════════════════════
+        $rows         = [];
+        $porObjEspec  = []; // total agrupado por código de objeto específico
+
+        foreach ($agrupado as $g) {
+            $entDet = $g['entDet'];
+
+            $codigoObjEspec = $entDet->material?->objetoEspecifico?->codigo ?? '—';
+            $nombreObjEspec = $entDet->material?->objetoEspecifico?->nombre ?? '';
+            $medida         = $entDet->material?->unidadMedida?->nombre ?? '—';
+
+            $subtotal = $g['cantidad'] * $g['precio'];
+
+            // Totalizar por objeto específico (código presupuestario real)
+            $keyObj = $codigoObjEspec;
+            if (!isset($porObjEspec[$keyObj])) {
+                $porObjEspec[$keyObj] = [
+                    'codigo'   => $codigoObjEspec,
+                    'nombre'   => $nombreObjEspec,
+                    'subtotal' => 0,
+                ];
+            }
+            $porObjEspec[$keyObj]['subtotal'] += $subtotal;
 
             $rows[] = [
-                'codigo'   => $codigo,
-                'nombre'   => $mat['nombre'] ?? '—',
+                'codigo'   => $codigoObjEspec,
+                'nombre'   => $g['nombre'],
                 'medida'   => $medida,
-                'cantidad' => $cantidad,
-                'precio'   => $precio,
+                'cantidad' => $g['cantidad'],
+                'precio'   => $g['precio'],
                 'subtotal' => $subtotal,
             ];
         }
@@ -4149,7 +4219,7 @@ padding:5px 4px; background:#d9e1f2; text-align:center;";
         $granTotal = array_sum(array_column($rows, 'subtotal'));
 
         $thStyle = "font-weight:bold; font-size:10px; border:0.8px solid #000;
-                padding:4px; background:#d9e1f2; text-align:center;";
+            padding:4px; background:#d9e1f2; text-align:center;";
         $tdStyle = "font-size:10px; border:0.8px solid #000; padding:4px;";
         $tdC     = $tdStyle . " text-align:center;";
         $tdR     = $tdStyle . " text-align:right;";
@@ -4157,77 +4227,77 @@ padding:5px 4px; background:#d9e1f2; text-align:center;";
         // ── Encabezado ────────────────────────────────────────────────
         $html = "
 <table width='100%' style='border-collapse:collapse; font-family:Arial,sans-serif;'>
-    <tr>
-        <td style='width:25%; border:0.8px solid #000; padding:6px 8px;'>
-            <table width='100%'>
-                <tr>
-                    <td style='width:35%; text-align:left;'>
-                        <img src='{$logoalcaldia}' style='height:38px'>
-                    </td>
-                    <td style='width:65%; text-align:left; color:#104e8c;
-                                font-size:12px; font-weight:bold; line-height:1.3;'>
-                        SANTA ANA NORTE<br>EL SALVADOR
-                    </td>
-                </tr>
-            </table>
-        </td>
-        <td style='width:50%; border-top:0.8px solid #000; border-bottom:0.8px solid #000;
-                   padding:6px 8px; text-align:center; font-size:13px; font-weight:bold;'>
-            FORMULARIO DE RESERVA DE MATERIALES SOBRANTES<br>
-            PARA PROYECTO DE INVERSIÓN PÚBLICA
-        </td>
-        <td style='width:25%; border:0.8px solid #000; padding:0; vertical-align:top;'>
-            <table width='100%' style='font-size:10px;'>
-                <tr>
-                    <td width='40%' style='border-right:0.8px solid #000;
-                                           border-bottom:0.8px solid #000; padding:4px 6px;'>
-                        <strong>Código:</strong>
-                    </td>
-                    <td width='60%' style='border-bottom:0.8px solid #000;
-                                           padding:4px 6px; text-align:center;'>
-                        GEAD-001-FORM
-                    </td>
-                </tr>
-                <tr>
-                    <td style='border-right:0.8px solid #000;
-                               border-bottom:0.8px solid #000; padding:4px 6px;'>
-                        <strong>Versión:</strong>
-                    </td>
-                    <td style='border-bottom:0.8px solid #000;
-                               padding:4px 6px; text-align:center;'>000</td>
-                </tr>
-                <tr>
-                    <td style='border-right:0.8px solid #000; padding:4px 6px;'>
-                        <strong>Fecha de vigencia:</strong>
-                    </td>
-                    <td style='padding:4px 6px; text-align:center;'></td>
-                </tr>
-            </table>
-        </td>
-    </tr>
+<tr>
+    <td style='width:25%; border:0.8px solid #000; padding:6px 8px;'>
+        <table width='100%'>
+            <tr>
+                <td style='width:35%; text-align:left;'>
+                    <img src='{$logoalcaldia}' style='height:38px'>
+                </td>
+                <td style='width:65%; text-align:left; color:#104e8c;
+                            font-size:12px; font-weight:bold; line-height:1.3;'>
+                    SANTA ANA NORTE<br>EL SALVADOR
+                </td>
+            </tr>
+        </table>
+    </td>
+    <td style='width:50%; border-top:0.8px solid #000; border-bottom:0.8px solid #000;
+               padding:6px 8px; text-align:center; font-size:13px; font-weight:bold;'>
+        FORMULARIO DE RESERVA DE MATERIALES SOBRANTES<br>
+        PARA PROYECTO DE INVERSIÓN PÚBLICA
+    </td>
+    <td style='width:25%; border:0.8px solid #000; padding:0; vertical-align:top;'>
+        <table width='100%' style='font-size:10px;'>
+            <tr>
+                <td width='40%' style='border-right:0.8px solid #000;
+                                       border-bottom:0.8px solid #000; padding:4px 6px;'>
+                    <strong>Código:</strong>
+                </td>
+                <td width='60%' style='border-bottom:0.8px solid #000;
+                                       padding:4px 6px; text-align:center;'>
+                    GEAD-001-FORM
+                </td>
+            </tr>
+            <tr>
+                <td style='border-right:0.8px solid #000;
+                           border-bottom:0.8px solid #000; padding:4px 6px;'>
+                    <strong>Versión:</strong>
+                </td>
+                <td style='border-bottom:0.8px solid #000;
+                           padding:4px 6px; text-align:center;'>000</td>
+            </tr>
+            <tr>
+                <td style='border-right:0.8px solid #000; padding:4px 6px;'>
+                    <strong>Fecha de vigencia:</strong>
+                </td>
+                <td style='padding:4px 6px; text-align:center;'></td>
+            </tr>
+        </table>
+    </td>
+</tr>
 </table><br>";
 
         // ── No. Solicitud y Fecha ─────────────────────────────────────
         $html .= "
 <table width='100%' style='border-collapse:collapse; margin-bottom:4px; margin-top:6px;'>
-    <tr>
-        <td style='width:20%; border:0.8px solid #ccc; padding:5px 8px;
-                   font-size:11px; font-weight:bold; background:#f5f5f5;'>
-            NO. DE SOLICITUD:
-        </td>
-        <td style='width:44%; border:0.8px solid #ccc; padding:5px 8px; font-size:11px;'>
-            " . e($numero) . "
-        </td>
-        <td style='width:5%; border:none;'></td>
-        <td style='width:13%; border:0.8px solid #000; padding:5px 8px;
-                   font-size:11px; font-weight:bold; text-align:center; background:#f5f5f5;'>
-            FECHA:
-        </td>
-        <td style='width:18%; border:0.8px solid #000; padding:5px 8px;
-                   font-size:11px; text-align:center;'>
-            {$fechaFormat}
-        </td>
-    </tr>
+<tr>
+    <td style='width:20%; border:0.8px solid #ccc; padding:5px 8px;
+               font-size:11px; font-weight:bold; background:#f5f5f5;'>
+        NO. DE SOLICITUD:
+    </td>
+    <td style='width:44%; border:0.8px solid #ccc; padding:5px 8px; font-size:11px;'>
+        " . e($numero) . "
+    </td>
+    <td style='width:5%; border:none;'></td>
+    <td style='width:13%; border:0.8px solid #000; padding:5px 8px;
+               font-size:11px; font-weight:bold; text-align:center; background:#f5f5f5;'>
+        FECHA:
+    </td>
+    <td style='width:18%; border:0.8px solid #000; padding:5px 8px;
+               font-size:11px; text-align:center;'>
+        {$fechaFormat}
+    </td>
+</tr>
 </table>";
 
         // ── Campos ────────────────────────────────────────────────────
@@ -4243,105 +4313,110 @@ padding:5px 4px; background:#d9e1f2; text-align:center;";
         $html .= "<table width='100%' style='border-collapse:collapse; margin-bottom:4px;'>";
         foreach ($campos as $label => $valor) {
             $html .= "
-    <tr>
-        <td style='width:25%; border:0.8px solid #ccc; padding:5px 8px;
-                   font-size:11px; font-weight:bold; background:#f5f5f5;'>
-            {$label}:
-        </td>
-        <td style='border:0.8px solid #ccc; padding:5px 8px; font-size:11px;'>
-            {$valor}
-        </td>
-    </tr>";
+<tr>
+    <td style='width:25%; border:0.8px solid #ccc; padding:5px 8px;
+               font-size:11px; font-weight:bold; background:#f5f5f5;'>
+        {$label}:
+    </td>
+    <td style='border:0.8px solid #ccc; padding:5px 8px; font-size:11px;'>
+        " . e($valor) . "
+    </td>
+</tr>";
         }
         $html .= "</table>";
 
         // ── Texto declaración ─────────────────────────────────────────
         $html .= "
 <table width='100%' style='border-collapse:collapse; margin-bottom:8px; margin-top:4px;'>
-    <tr>
-        <td style='border:0.8px solid #000; padding:8px 10px; font-size:10px;
-                   text-align:justify; line-height:1.6;'>
-            POR MEDIO DEL PRESENTE DOCUMENTO, EL SUSCRITO DECLARA FORMALMENTE LA SOLICITUD PARA
-            LA RESERVA Y JUSTIFICACIÓN DE LOS MATERIALES SOBRANTES DETALLADOS A CONTINUACIÓN,
-            LOS CUALES SE REQUIEREN PARA LA EJECUCIÓN DEL PROYECTO DE INVERSIÓN PÚBLICA QUE SE
-            EJECUTARÁ POR LA MUNICIPALIDAD ESPECIFICADO EN LA PRESENTE SOLICITUD, CUMPLIENDO CON
-            LO ESTABLECIDO EN EL MANUAL DE PROCEDIMIENTOS PARA CONTROL DE EXISTENCIAS DE MATERIALES
-            SOBRANTES DE PROYECTOS, CON LA CERTIFICACIÓN DE LAS EXISTENCIAS DEL INVENTARIO EN BODEGA
-            SEGÚN EL SIGUIENTE DETALLE:
-        </td>
-    </tr>
+<tr>
+    <td style='border:0.8px solid #000; padding:8px 10px; font-size:10px;
+               text-align:justify; line-height:1.6;'>
+        POR MEDIO DEL PRESENTE DOCUMENTO, EL SUSCRITO DECLARA FORMALMENTE LA SOLICITUD PARA
+        LA RESERVA Y JUSTIFICACIÓN DE LOS MATERIALES SOBRANTES DETALLADOS A CONTINUACIÓN,
+        LOS CUALES SE REQUIEREN PARA LA EJECUCIÓN DEL PROYECTO DE INVERSIÓN PÚBLICA QUE SE
+        EJECUTARÁ POR LA MUNICIPALIDAD ESPECIFICADO EN LA PRESENTE SOLICITUD, CUMPLIENDO CON
+        LO ESTABLECIDO EN EL MANUAL DE PROCEDIMIENTOS PARA CONTROL DE EXISTENCIAS DE MATERIALES
+        SOBRANTES DE PROYECTOS, CON LA CERTIFICACIÓN DE LAS EXISTENCIAS DEL INVENTARIO EN BODEGA
+        SEGÚN EL SIGUIENTE DETALLE:
+    </td>
+</tr>
 </table>";
 
         // ── Tabla materiales ──────────────────────────────────────────
         $html .= "
 <table width='100%' style='border-collapse:collapse;'>
-    <thead>
-        <tr>
-            <th style='{$thStyle} width:5%;'>No.</th>
-            <th style='{$thStyle} width:10%;'>COD PRESUP.</th>
-            <th style='{$thStyle} width:35%;'>DESCRIPCIÓN</th>
-            <th style='{$thStyle} width:12%;'>U. DE MEDIDA</th>
-            <th style='{$thStyle} width:10%;'>CANTIDAD</th>
-            <th style='{$thStyle} width:13%;'>PRECIO UNITARIO</th>
-            <th style='{$thStyle} width:15%;'>SUBTOTAL</th>
-        </tr>
-    </thead>
-    <tbody>";
+<thead>
+    <tr>
+        <th style='{$thStyle} width:5%;'>No.</th>
+        <th style='{$thStyle} width:10%;'>COD PRESUP.</th>
+        <th style='{$thStyle} width:35%;'>DESCRIPCIÓN</th>
+        <th style='{$thStyle} width:12%;'>U. DE MEDIDA</th>
+        <th style='{$thStyle} width:10%;'>CANTIDAD</th>
+        <th style='{$thStyle} width:13%;'>PRECIO UNITARIO</th>
+        <th style='{$thStyle} width:15%;'>SUBTOTAL</th>
+    </tr>
+</thead>
+<tbody>";
 
         $i = 1;
         foreach ($rows as $r) {
             $html .= "
-        <tr>
-            <td style='{$tdC}'>{$i}</td>
-            <td style='{$tdC}'>" . e($r['codigo']) . "</td>
-            <td style='{$tdStyle}'>" . e($r['nombre']) . "</td>
-            <td style='{$tdC}'>" . e($r['medida']) . "</td>
-            <td style='{$tdC} font-weight:bold;'>" . number_format($r['cantidad']) . "</td>
-            <td style='{$tdR}'>$ " . number_format($r['precio'], 4) . "</td>
-            <td style='{$tdR}'>$ " . number_format($r['subtotal'], 4) . "</td>
-        </tr>";
+    <tr>
+        <td style='{$tdC}'>{$i}</td>
+        <td style='{$tdC}'>" . e($r['codigo']) . "</td>
+        <td style='{$tdStyle}'>" . e($r['nombre']) . "</td>
+        <td style='{$tdC}'>" . e($r['medida']) . "</td>
+        <td style='{$tdC} font-weight:bold;'>" . number_format($r['cantidad']) . "</td>
+        <td style='{$tdR}'>$ " . number_format($r['precio'], 4) . "</td>
+        <td style='{$tdR}'>$ " . number_format($r['subtotal'], 4) . "</td>
+    </tr>";
             $i++;
         }
 
-        foreach ($porCodigo as $cod => $subtotal) {
+        // ── Subtotales por OBJETO ESPECÍFICO ──────────────────────────
+        foreach ($porObjEspec as $obj) {
+            $label = "SUBTOTAL OBJETO ESPECÍFICO [" . e($obj['codigo']) . "]";
+            if (!empty($obj['nombre'])) {
+                $label .= " — " . e($obj['nombre']);
+            }
             $html .= "
-        <tr>
-            <td colspan='6' style='font-weight:bold; font-size:10px; text-align:center;
-                                    border:0.8px solid #000; padding:4px; background:#f2f4f8;'>
-                SUBTOTAL [" . e($cod) . "]
-            </td>
-            <td style='font-weight:bold; font-size:10px; text-align:right;
-                        border:0.8px solid #000; padding:4px; background:#f2f4f8;'>
-                $ " . number_format($subtotal, 4) . "
-            </td>
-        </tr>";
+    <tr>
+        <td colspan='6' style='font-weight:bold; font-size:10px; text-align:center;
+                                border:0.8px solid #000; padding:4px; background:#f2f4f8;'>
+            {$label}
+        </td>
+        <td style='font-weight:bold; font-size:10px; text-align:right;
+                    border:0.8px solid #000; padding:4px; background:#f2f4f8;'>
+            $ " . number_format($obj['subtotal'], 4) . "
+        </td>
+    </tr>";
         }
 
         $html .= "
-        <tr>
-            <td colspan='6' style='font-weight:bold; font-size:11px; text-align:center;
-                                    border:0.8px solid #000; padding:5px; background:#d9e1f2;'>
-                TOTAL GENERAL
-            </td>
-            <td style='font-weight:bold; font-size:11px; text-align:right;
-                        border:0.8px solid #000; padding:5px; background:#d9e1f2;'>
-                $ " . number_format($granTotal, 4) . "
-            </td>
-        </tr>
-    </tbody>
+    <tr>
+        <td colspan='6' style='font-weight:bold; font-size:11px; text-align:center;
+                                border:0.8px solid #000; padding:5px; background:#d9e1f2;'>
+            TOTAL GENERAL
+        </td>
+        <td style='font-weight:bold; font-size:11px; text-align:right;
+                    border:0.8px solid #000; padding:5px; background:#d9e1f2;'>
+            $ " . number_format($granTotal, 4) . "
+        </td>
+    </tr>
+</tbody>
 </table>";
 
         // ── Observaciones ─────────────────────────────────────────────
         $html .= "
 <br>
 <table width='100%' border='1' cellspacing='0' cellpadding='6'
-       style='border-collapse:collapse; font-size:11px;'>
-    <tr style='background:#f2f4f8;'>
-        <td style='font-weight:bold;'>OBSERVACIONES:</td>
-    </tr>
-    <tr>
-        <td style='height:40px; vertical-align:top;'>" . e($observaciones) . "</td>
-    </tr>
+   style='border-collapse:collapse; font-size:11px;'>
+<tr style='background:#f2f4f8;'>
+    <td style='font-weight:bold;'>OBSERVACIONES:</td>
+</tr>
+<tr>
+    <td style='height:40px; vertical-align:top;'>" . e($observaciones) . "</td>
+</tr>
 </table>";
 
         // ── Firmas ────────────────────────────────────────────────────
@@ -4349,104 +4424,112 @@ padding:5px 4px; background:#d9e1f2; text-align:center;";
 
         $html .= "
 <table width='100%' style='border-collapse:collapse; font-family:Arial,sans-serif;
-                            margin-top:{$px}px; font-size:11px;'>
-    <tr>
-        <td style='width:50%; padding-right:40px; vertical-align:top;'>
-            <strong>ELABORADO POR:</strong><br><br>
-            <table width='100%' style='border-collapse:collapse;'>
-                <tr>
-                    <td style='width:15%;'>FIRMA:</td>
-                    <td style='border-bottom:0.8px solid #000; width:85%;'>&nbsp;</td>
-                </tr>
-                <tr><td colspan='2' style='height:20px;'></td></tr>
-                <tr>
-                    <td>NOMBRE:</td>
-                    <td style='border-bottom:0.8px solid #000;'>&nbsp;</td>
-                </tr>
-                <tr><td colspan='2' style='height:20px;'></td></tr>
-                <tr>
-                    <td>CARGO:</td>
-                    <td style='border-bottom:0.8px solid #000;'>&nbsp;</td>
-                </tr>
-                <tr><td colspan='2' style='height:20px;'></td></tr>
-                <tr>
-                    <td colspan='2' style='text-align:center; font-size:10px;'>
-                        SOLICITANTE
-                    </td>
-                </tr>
-            </table>
-        </td>
-        <td style='width:50%; padding-left:40px; vertical-align:top;'>
-            <strong>ES CONFORME:</strong><br><br>
-            <table width='100%' style='border-collapse:collapse;'>
-                <tr>
-                    <td style='width:15%;'>FIRMA:</td>
-                    <td style='border-bottom:0.8px solid #000; width:85%;'>&nbsp;</td>
-                </tr>
-                <tr><td colspan='2' style='height:20px;'></td></tr>
-                <tr>
-                    <td>NOMBRE:</td>
-                    <td style='border-bottom:0.8px solid #000;'>&nbsp;</td>
-                </tr>
-                <tr><td colspan='2' style='height:20px;'></td></tr>
-                <tr>
-                    <td>CARGO:</td>
-                    <td style='border-bottom:0.8px solid #000;'>&nbsp;</td>
-                </tr>
-                <tr><td colspan='2' style='height:20px;'></td></tr>
-                <tr>
-                    <td colspan='2' style='text-align:center; font-size:10px;'>
-                        [ENCARGADO DE BODEGA DE PROYECTO O RESPONSABLE ASIGNADO]
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-
-    <tr><td colspan='2' style='height:80px;'></td></tr>
-
-    {{-- Fila autorizado centrado --}}
-  <tr>
-    <td colspan='2'
-        style='text-align:center; vertical-align:top;
-               padding: {$informacionGeneral->px_autorizado}px 0 20px 0;'>
-        <table width='90%'
-               style='border-collapse:collapse; margin:0 auto; font-size:11px;'>
+                    margin-top:{$px}px; font-size:13px; line-height:1.8;'>
+<tr>
+    <td style='width:50%; padding-right:40px; vertical-align:top;'>
+        <strong style='font-size:14px;'>ELABORADO POR:</strong><br><br><br>
+        <table width='100%' style='border-collapse:collapse; line-height:1.8;'>
             <tr>
-                <td style='width:14%; text-align:left; padding-right:6px; white-space:nowrap;'>
-                    AUTORIZADO:
-                </td>
-                <td style='width:20%;'>&nbsp;</td>
-
-                <td style='width:6%;'>&nbsp;</td>
-
-                <td style='width:10%; text-align:left; padding-right:6px; white-space:nowrap;'>
-                    ACUERDO:
-                </td>
-                <td style='width:14%; border-bottom:0.8px solid #000; padding:0 8px; min-width:90px;'>
-                    &nbsp;
-                </td>
-
-                <td style='width:6%;'>&nbsp;</td>
-
-                <td style='width:7%; text-align:left; padding-right:6px; white-space:nowrap;'>
-                    ACTA:
-                </td>
-                <td style='width:14%; border-bottom:0.8px solid #000; padding:0 8px; min-width:90px;'>
-                    &nbsp;
-                </td>
-
-                <td style='width:6%;'>&nbsp;</td>
-
-                <td style='width:7%; text-align:left; padding-right:6px; white-space:nowrap;'>
-                    FECHA:
-                </td>
-                <td style='width:18%; border-bottom:0.8px solid #000; padding:0 8px; min-width:110px;'>
-                    &nbsp;
+                <td style='width:18%; padding:6px 0; font-size:13px;'>FIRMA:</td>
+                <td style='border-bottom:0.8px solid #000; width:82%; padding:6px 0;'>&nbsp;</td>
+            </tr>
+            <tr><td colspan='2' style='height:35px;'></td></tr>
+            <tr>
+                <td style='padding:6px 0; font-size:13px;'>NOMBRE:</td>
+                <td style='border-bottom:0.8px solid #000; padding:6px 0;'>&nbsp;</td>
+            </tr>
+            <tr><td colspan='2' style='height:35px;'></td></tr>
+            <tr>
+                <td style='padding:6px 0; font-size:13px;'>CARGO:</td>
+                <td style='border-bottom:0.8px solid #000; padding:6px 0;'>&nbsp;</td>
+            </tr>
+            <tr><td colspan='2' style='height:35px;'></td></tr>
+            <tr>
+                <td colspan='2' style='text-align:center; font-size:13px; font-weight:bold;
+                                       padding-top:10px;'>
+                    SOLICITANTE
                 </td>
             </tr>
         </table>
     </td>
+    <td style='width:50%; padding-left:40px; vertical-align:top;'>
+        <strong style='font-size:14px;'>ES CONFORME:</strong><br><br><br>
+        <table width='100%' style='border-collapse:collapse; line-height:1.8;'>
+            <tr>
+                <td style='width:18%; padding:6px 0; font-size:13px;'>FIRMA:</td>
+                <td style='border-bottom:0.8px solid #000; width:82%; padding:6px 0;'>&nbsp;</td>
+            </tr>
+            <tr><td colspan='2' style='height:35px;'></td></tr>
+            <tr>
+                <td style='padding:6px 0; font-size:13px;'>NOMBRE:</td>
+                <td style='border-bottom:0.8px solid #000; padding:6px 0;'>&nbsp;</td>
+            </tr>
+            <tr><td colspan='2' style='height:35px;'></td></tr>
+            <tr>
+                <td style='padding:6px 0; font-size:13px;'>CARGO:</td>
+                <td style='border-bottom:0.8px solid #000; padding:6px 0;'>&nbsp;</td>
+            </tr>
+            <tr><td colspan='2' style='height:35px;'></td></tr>
+            <tr>
+                <td colspan='2' style='text-align:center; font-size:12px; font-weight:bold;
+                                       padding-top:10px; line-height:1.5;'>
+                    [ENCARGADO DE BODEGA DE PROYECTO<br>O RESPONSABLE ASIGNADO]
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<tr><td colspan='2' style='height:100px;'></td></tr>
+
+<tr>
+<td colspan='2'
+    style='text-align:center; vertical-align:top;
+           padding: {$informacionGeneral->px_autorizado}px 0 20px 0;'>
+    <table width='95%'
+           style='border-collapse:collapse; margin:0 auto; font-size:13px; line-height:1.8;'>
+        <tr>
+            <td style='width:14%; text-align:left; padding:8px 6px 8px 0; white-space:nowrap;
+                       font-weight:bold;'>
+                AUTORIZADO:
+            </td>
+            <td style='width:20%; padding:8px 0;'>&nbsp;</td>
+
+            <td style='width:4%; padding:8px 0;'>&nbsp;</td>
+
+            <td style='width:10%; text-align:left; padding:8px 6px 8px 0; white-space:nowrap;
+                       font-weight:bold;'>
+                ACUERDO:
+            </td>
+            <td style='width:14%; border-bottom:0.8px solid #000; padding:8px 10px;
+                       min-width:90px;'>
+                &nbsp;
+            </td>
+
+            <td style='width:4%; padding:8px 0;'>&nbsp;</td>
+
+            <td style='width:7%; text-align:left; padding:8px 6px 8px 0; white-space:nowrap;
+                       font-weight:bold;'>
+                ACTA:
+            </td>
+            <td style='width:14%; border-bottom:0.8px solid #000; padding:8px 10px;
+                       min-width:90px;'>
+                &nbsp;
+            </td>
+
+            <td style='width:4%; padding:8px 0;'>&nbsp;</td>
+
+            <td style='width:7%; text-align:left; padding:8px 6px 8px 0; white-space:nowrap;
+                       font-weight:bold;'>
+                FECHA:
+            </td>
+            <td style='width:18%; border-bottom:0.8px solid #000; padding:8px 10px;
+                       min-width:110px;'>
+                &nbsp;
+            </td>
+        </tr>
+    </table>
+</td>
 </tr>
 </table>";
 
@@ -4461,6 +4544,98 @@ padding:5px 4px; background:#d9e1f2; text-align:center;";
         $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
         $mpdf->Output();
     }
+
+
+    /**
+     * Genera un PDF con el detalle de los errores de stock encontrados.
+     */
+    private function renderErrorStockPdf(array $errores)
+    {
+        $thStyle = "font-weight:bold; font-size:11px; border:0.8px solid #000;
+                padding:6px; background:#f8d7da; text-align:center; color:#721c24;";
+        $tdStyle = "font-size:10px; border:0.8px solid #000; padding:6px;";
+        $tdC     = $tdStyle . " text-align:center;";
+
+        $html = "
+<table width='100%' style='border-collapse:collapse; font-family:Arial,sans-serif; margin-bottom:20px;'>
+    <tr>
+        <td style='border:2px solid #721c24; background:#f8d7da; padding:20px;
+                   text-align:center; color:#721c24;'>
+            <h2 style='margin:0; font-size:18px;'>
+                ⚠ ERROR DE STOCK INSUFICIENTE
+            </h2>
+            <p style='margin:8px 0 0 0; font-size:12px;'>
+                No es posible generar el formulario de reserva. Las siguientes cantidades
+                solicitadas exceden el stock disponible en bodega.
+            </p>
+        </td>
+    </tr>
+</table>
+
+<table width='100%' style='border-collapse:collapse;'>
+    <thead>
+        <tr>
+            <th style='{$thStyle} width:5%;'>No.</th>
+            <th style='{$thStyle} width:35%;'>MATERIAL</th>
+            <th style='{$thStyle} width:12%;'>CANT. INICIAL</th>
+            <th style='{$thStyle} width:11%;'>SALIDAS</th>
+            <th style='{$thStyle} width:11%;'>RESERVADO</th>
+            <th style='{$thStyle} width:12%;'>DISPONIBLE</th>
+            <th style='{$thStyle} width:14%;'>SOLICITADO</th>
+        </tr>
+    </thead>
+    <tbody>";
+
+        $i = 1;
+        foreach ($errores as $e) {
+            $exceso = $e['solicitado'] - $e['disponible'];
+            $html .= "
+        <tr>
+            <td style='{$tdC}'>{$i}</td>
+            <td style='{$tdStyle}'>" . e($e['nombre']) . "</td>
+            <td style='{$tdC}'>" . number_format($e['inicial']) . "</td>
+            <td style='{$tdC}'>" . number_format($e['salidas']) . "</td>
+            <td style='{$tdC}'>" . number_format($e['reservas']) . "</td>
+            <td style='{$tdC} font-weight:bold; color:#155724; background:#d4edda;'>
+                " . number_format($e['disponible']) . "
+            </td>
+            <td style='{$tdC} font-weight:bold; color:#721c24; background:#f8d7da;'>
+                " . number_format($e['solicitado']) . "
+                <br><small>(excede en " . number_format($exceso) . ")</small>
+            </td>
+        </tr>";
+            $i++;
+        }
+
+        $html .= "
+    </tbody>
+</table>
+
+<br><br>
+<table width='100%' style='border-collapse:collapse; font-family:Arial,sans-serif;'>
+    <tr>
+        <td style='border:0.8px solid #999; padding:12px; font-size:10px;
+                   background:#fff3cd; color:#856404;'>
+            <strong>Nota:</strong> La cantidad disponible se calcula como:
+            <em>Cantidad inicial − Salidas registradas − Reservas pendientes de despacho</em>.
+            Verifique las cantidades solicitadas o consulte el estado actual del inventario
+            antes de continuar.
+        </td>
+    </tr>
+</table>";
+
+        $mpdf = new \Mpdf\Mpdf([
+            'tempDir'     => sys_get_temp_dir(),
+            'format'      => 'LETTER',
+            'orientation' => 'P',
+        ]);
+        $mpdf->SetTitle('ERROR - Stock insuficiente');
+        $mpdf->showImageErrors = false;
+        $mpdf->setFooter("Página {PAGENO} de {nb}");
+        $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
+        $mpdf->Output();
+    }
+
 
 
     public function actualizarPxInformacionGeneral(Request $request)

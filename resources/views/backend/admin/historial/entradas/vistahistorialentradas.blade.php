@@ -178,7 +178,7 @@
                                 <th>Material</th>
                                 <th class="text-center">Cantidad</th>
                                 <th class="text-right">Precio unitario</th>
-                                <th id="detalle-col-accion" class="text-center">Acción</th>
+                                <th id="detalle-col-accion" class="text-center">Acciones</th>
                             </tr>
                             </thead>
                             <tbody id="detalle-tbody"></tbody>
@@ -344,7 +344,6 @@
             cargarTabla();
 
             // ── Delegación de evento para botón editar detalle ────
-            // ✅ FIX: Evita SyntaxError por comillas/caracteres especiales en material o codigo
             $(document).on('click', '.btn-editar-detalle', function () {
                 const btn = $(this);
                 modalEditarDetalle(
@@ -352,6 +351,15 @@
                     btn.data('material'),
                     btn.data('codigo'),
                     btn.data('precio')
+                );
+            });
+
+            // ── Delegación de evento para botón eliminar detalle ──
+            $(document).on('click', '.btn-eliminar-detalle', function () {
+                const btn = $(this);
+                eliminarDetalle(
+                    btn.data('id'),
+                    btn.data('material')
                 );
             });
         });
@@ -412,7 +420,7 @@
                 .catch(() => { closeLoading(); toastr.error('Error al actualizar'); });
         }
 
-        // ── Eliminar ──────────────────────────────────────────────
+        // ── Eliminar entrada completa ─────────────────────────────
         function eliminar(id) {
             Swal.fire({
                 title: '¿Eliminar entrada?',
@@ -438,7 +446,6 @@
                                     break;
 
                                 case 2:
-                                    // Reservas ya despachadas
                                     Swal.fire({
                                         title: 'No se puede eliminar',
                                         text:  response.data.msg ||
@@ -450,7 +457,6 @@
                                     break;
 
                                 case 3:
-                                    // La entrada es destino de una transferencia
                                     Swal.fire({
                                         title: 'No se puede eliminar aquí',
                                         text:  response.data.msg ||
@@ -505,19 +511,27 @@
                     if (response.data.success === 1 && response.data.detalle.length > 0) {
                         let html = '';
                         response.data.detalle.forEach((fila, index) => {
-                            // ✅ FIX: Usamos data-* en lugar de parámetros inline en onclick.
-                            // Esto evita SyntaxError cuando material o codigo contienen
-                            // comillas simples, dobles, barras u otros caracteres especiales.
-                            const btnEditar = cerrado
-                                ? ''
-                                : `<button type="button"
-                                       class="btn btn-warning btn-xs btn-editar-detalle"
-                                       data-id="${fila.id}"
-                                       data-material="${fila.material}"
-                                       data-codigo="${fila.codigo ?? ''}"
-                                       data-precio="${fila.precio_raw}">
-                                       <i class="fas fa-edit"></i>
-                                   </button>`;
+                            // ✅ Botones con data-* para evitar problemas con caracteres especiales
+                            let botones = '';
+                            if (!cerrado) {
+                                botones = `
+                                    <button type="button"
+                                            class="btn btn-warning btn-xs btn-editar-detalle mr-1"
+                                            title="Editar"
+                                            data-id="${fila.id}"
+                                            data-material="${fila.material}"
+                                            data-codigo="${fila.codigo ?? ''}"
+                                            data-precio="${fila.precio_raw}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-danger btn-xs btn-eliminar-detalle"
+                                            title="Eliminar"
+                                            data-id="${fila.id}"
+                                            data-material="${fila.material}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>`;
+                            }
 
                             html += `
                                 <tr>
@@ -527,7 +541,7 @@
                                     <td>${fila.material}</td>
                                     <td class="text-center">${fila.cantidad_inicial}</td>
                                     <td class="text-right">$${fila.precio}</td>
-                                    <td class="text-center">${btnEditar}</td>
+                                    <td class="text-center text-nowrap">${botones}</td>
                                 </tr>`;
                         });
                         $('#detalle-tbody').html(html);
@@ -588,6 +602,110 @@
                     }
                 })
                 .catch(() => { closeLoading(); toastr.error('Error al actualizar'); });
+        }
+
+        // ── Eliminar fila de detalle ──────────────────────────────
+        function eliminarDetalle(id, material) {
+            Swal.fire({
+                title: '¿Eliminar material?',
+                html: `Se eliminará el material: <b>${material}</b><br><br>
+               <small class="text-muted">Si es el último material de esta entrada, la entrada completa también será eliminada.</small>`,
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.value) {
+                    openLoading();
+                    axios.post(urlAdmin + '/admin/historial/entradas/detalle/eliminar', { id: id })
+                        .then((response) => {
+                            closeLoading();
+
+                            switch (response.data.success) {
+                                case 1:
+                                    if (response.data.entrada_borrada) {
+                                        toastr.success('Material eliminado. La entrada fue eliminada por no tener más materiales.');
+                                        $('#modalDetalle').modal('hide');
+                                        recargar();
+                                    } else {
+                                        toastr.success('Material eliminado correctamente');
+                                        const entradaId = $('#detalle-id-editar').data('entrada-id');
+                                        const proyecto  = $('#detalle-proyecto').text();
+                                        const fecha     = $('#detalle-fecha').text();
+                                        const cerrado   = $('#detalle-badge-cerrado').is(':visible') ? 1 : 0;
+                                        verDetalle(entradaId, proyecto, fecha, cerrado);
+                                        recargar();
+                                    }
+                                    break;
+
+                                case 2:
+                                    Swal.fire({
+                                        title: 'No se puede eliminar',
+                                        text:  response.data.msg || 'El proyecto está cerrado.',
+                                        icon:  'warning',
+                                        confirmButtonColor: '#d33',
+                                        confirmButtonText:  'Entendido'
+                                    });
+                                    break;
+
+                                case 3:
+                                    Swal.fire({
+                                        title: 'No se puede eliminar aquí',
+                                        text:  response.data.msg ||
+                                            'Este material proviene de una transferencia. Elimínelo desde el Historial de Transferencias.',
+                                        icon:  'info',
+                                        confirmButtonColor: '#2156af',
+                                        confirmButtonText:  'Entendido'
+                                    });
+                                    break;
+
+                                case 4:
+                                    Swal.fire({
+                                        title: 'No se puede eliminar',
+                                        text:  response.data.msg || 'Este material ya tiene salidas registradas.',
+                                        icon:  'warning',
+                                        confirmButtonColor: '#d33',
+                                        confirmButtonText:  'Entendido'
+                                    });
+                                    break;
+
+                                case 5:
+                                    Swal.fire({
+                                        title: 'No se puede eliminar',
+                                        text:  response.data.msg || 'Este material tiene reservas asociadas.',
+                                        icon:  'warning',
+                                        confirmButtonColor: '#d33',
+                                        confirmButtonText:  'Entendido'
+                                    });
+                                    break;
+
+                                case 6:
+                                    Swal.fire({
+                                        title: 'No se puede eliminar',
+                                        text:  response.data.msg || 'Este material está incluido en una transferencia.',
+                                        icon:  'warning',
+                                        confirmButtonColor: '#d33',
+                                        confirmButtonText:  'Entendido'
+                                    });
+                                    break;
+
+                                case 0:
+                                    toastr.error('El material no existe o ya fue eliminado');
+                                    break;
+
+                                case 99:
+                                    toastr.error(response.data.msg || 'Ocurrió un error al eliminar.');
+                                    break;
+
+                                default:
+                                    toastr.error('Error al eliminar');
+                            }
+                        })
+                        .catch(() => { closeLoading(); toastr.error('Error al eliminar'); });
+                }
+            });
         }
 
     </script>

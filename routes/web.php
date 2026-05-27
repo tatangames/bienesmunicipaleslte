@@ -128,6 +128,9 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/admin/historial/entradas/eliminar',    [HistorialController::class, 'eliminarEntrada']);
     Route::post('/admin/historial/entradas/detalle',        [HistorialController::class, 'detalleEntrada']);
     Route::post('/admin/historial/entradas/detalle/editar', [HistorialController::class, 'editarDetalleEntrada']);
+    Route::post('/admin/historial/entradas/detalle/eliminar', [HistorialController::class, 'eliminarDetalleEntrada']);
+
+
 
     Route::get('/admin/historial/entradas/extras/{id}', [HistorialController::class, 'vistaExtrasEntrada'])->name('admin.historial.entradas.extras');
     Route::post('/admin/historial/entradas/extras/guardar', [HistorialController::class, 'guardarExtrasEntrada']);

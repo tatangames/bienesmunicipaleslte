@@ -237,6 +237,108 @@ class HistorialController extends Controller
         return response()->json(['success' => 1]);
     }
 
+
+    public function eliminarDetalleEntrada(Request $request)
+    {
+        $detalle = EntradasDetalle::find($request->id);
+
+        if (!$detalle) {
+            return response()->json(['success' => 0]);
+        }
+
+        // 1) Cargar entrada y proyecto
+        $entrada = Entradas::find($detalle->id_entradas);
+        if (!$entrada) {
+            return response()->json(['success' => 0]);
+        }
+
+        $proyecto = TipoProyecto::find($entrada->id_tipoproyecto);
+        if (!$proyecto) {
+            return response()->json(['success' => 0]);
+        }
+
+        // 2) Bloquear si el proyecto está cerrado (transferido)
+        if ($proyecto->transferido) {
+            return response()->json([
+                'success' => 2,
+                'msg' => 'No se puede eliminar: el proyecto está cerrado.'
+            ]);
+        }
+
+        // 3) Bloquear si la entrada es destino de una transferencia
+        //    (no debería editarse desde aquí, sino desde el historial de transferencias)
+        if ($entrada->es_transferencia) {
+            return response()->json([
+                'success' => 3,
+                'msg' => 'Este material proviene de una transferencia. Elimínelo desde el Historial de Transferencias.'
+            ]);
+        }
+
+        // 4) Bloquear si el detalle tiene salidas registradas
+        $tieneSalidas = SalidasDetalle::where('id_entrada_detalle', $detalle->id)->exists();
+        if ($tieneSalidas) {
+            return response()->json([
+                'success' => 4,
+                'msg' => 'Este material ya tiene salidas registradas y no puede eliminarse.'
+            ]);
+        }
+
+        // 5) Bloquear si el detalle tiene reservas
+        $tieneReservas = DB::table('reservas')
+            ->where('id_entrada_detalle', $detalle->id)
+            ->exists();
+        if ($tieneReservas) {
+            return response()->json([
+                'success' => 5,
+                'msg' => 'Este material tiene reservas asociadas y no puede eliminarse.'
+            ]);
+        }
+
+        // 6) Bloquear si el detalle fue incluido en una transferencia (proyecto cerrado en el pasado)
+        $estaEnTransferencia = DB::table('transferencia_detalle')
+            ->where('id_entrada_detalle', $detalle->id)
+            ->exists();
+        if ($estaEnTransferencia) {
+            return response()->json([
+                'success' => 6,
+                'msg' => 'Este material está incluido en una transferencia y no puede eliminarse.'
+            ]);
+        }
+
+        // 7) Eliminar
+        DB::beginTransaction();
+        try {
+            $entradaId = $detalle->id_entradas;
+            $detalle->delete();
+
+            // Si era el último detalle de la entrada, eliminar también la cabecera
+            $quedan = EntradasDetalle::where('id_entradas', $entradaId)->count();
+
+            if ($quedan === 0) {
+                Entradas::where('id', $entradaId)->delete();
+                DB::commit();
+                return response()->json([
+                    'success'         => 1,
+                    'entrada_borrada' => true
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'success'         => 1,
+                'entrada_borrada' => false
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => 99,
+                'msg' => 'Error al eliminar: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+
     public function vistaExtrasEntrada($id)
     {
         $entrada = Entradas::with('tipoproyecto')->find($id);
