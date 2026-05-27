@@ -215,13 +215,15 @@
                                    id="tablaMaterialesCerrado" style="width:100%">
                                 <thead>
                                 <tr>
-                                    <th style="width:5%">#</th>
-                                    <th style="width:33%">Material</th>
-                                    <th style="width:10%">U/M</th>
-                                    <th style="width:12%">Disponible</th>
-                                    <th style="width:12%">Reservado</th>
-                                    <th style="width:12%">Libre</th>
-                                    <th style="width:16%">Acción</th>
+                                    <th style="width:4%">#</th>
+                                    <th style="width:9%">Obj. Espec.</th>
+                                    <th style="width:27%">Material</th>
+                                    <th style="width:8%">U/M</th>
+                                    <th style="width:11%">Precio Unit.</th>
+                                    <th style="width:10%">Disponible</th>
+                                    <th style="width:10%">Reservado</th>
+                                    <th style="width:9%">Libre</th>
+                                    <th style="width:12%">Acción</th>
                                 </tr>
                                 </thead>
                                 <tbody id="tbodyMateriales"></tbody>
@@ -818,11 +820,21 @@
                         var celdaMaterial = m.nombre + badgeReservado +
                             "<br><small style='color:#888; font-size:10px'>" + (m.medida ?? '—') + "</small>";
 
+                        // Precio unitario formateado a 4 decimales
+                        var precioFmt = '$ ' + parseFloat(m.precio ?? 0).toLocaleString('es-SV', {
+                            minimumFractionDigits: 4, maximumFractionDigits: 4
+                        });
+
                         $('#tbodyMateriales').append(
                             "<tr class='" + trClass + "'>" +
-                            "<td>" + (i + 1) + "</td><td>" + celdaMaterial + "</td>" +
-                            "<td>" + (m.medida ?? '—') + "</td><td>" + m.disponible + "</td>" +
-                            "<td>" + m.reservado + "</td><td><strong>" + m.libre + "</strong></td>" +
+                            "<td>" + (i + 1) + "</td>" +
+                            "<td>" + (m.objespec ?? '—') + "</td>" +
+                            "<td>" + celdaMaterial + "</td>" +
+                            "<td>" + (m.medida ?? '—') + "</td>" +
+                            "<td style='text-align:right'>" + precioFmt + "</td>" +
+                            "<td>" + m.disponible + "</td>" +
+                            "<td>" + m.reservado + "</td>" +
+                            "<td><strong>" + m.libre + "</strong></td>" +
                             "<td>" + btnSeleccionar + "</td></tr>"
                         );
                     });

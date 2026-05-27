@@ -676,23 +676,26 @@ class SalidasController extends Controller
             ->join('entradas as e', 'e.id', '=', 'ed.id_entradas')
             ->join('materiales as m', 'm.id', '=', 'ed.id_material')
             ->leftJoin('unidadmedida as um', 'um.id', '=', 'm.id_medida') // leftJoin por si id_medida es nullable
+            ->leftJoin('objeto_especifico as obj', 'obj.id', '=', 'm.id_objespecifico') // código objeto específico
             ->leftJoin(DB::raw('(
-            SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
-            FROM salidas_detalle GROUP BY id_entrada_detalle
-        ) as sd'), 'sd.id_entrada_detalle', '=', 'ed.id')
+        SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
+        FROM salidas_detalle GROUP BY id_entrada_detalle
+    ) as sd'), 'sd.id_entrada_detalle', '=', 'ed.id')
             ->leftJoin(DB::raw('(
-            SELECT id_entrada_detalle, SUM(cantidad) as total_reservado
-            FROM reservas WHERE despachado = 0 GROUP BY id_entrada_detalle
-        ) as r'), 'r.id_entrada_detalle', '=', 'ed.id')
+        SELECT id_entrada_detalle, SUM(cantidad) as total_reservado
+        FROM reservas WHERE despachado = 0 GROUP BY id_entrada_detalle
+    ) as r'), 'r.id_entrada_detalle', '=', 'ed.id')
             ->where('e.id_tipoproyecto', $idProyecto)
             ->selectRaw('
-            ed.id as id_entrada_detalle,
-            m.nombre,
-            COALESCE(um.nombre, "—") as medida,
-            (ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible,
-            COALESCE(r.total_reservado, 0) as reservado,
-            (ed.cantidad_inicial - COALESCE(sd.total_salido, 0) - COALESCE(r.total_reservado, 0)) as libre
-        ')
+        ed.id as id_entrada_detalle,
+        m.nombre,
+        COALESCE(um.nombre, "—") as medida,
+        COALESCE(obj.codigo, "—") as objespec,
+        ed.precio,
+        (ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible,
+        COALESCE(r.total_reservado, 0) as reservado,
+        (ed.cantidad_inicial - COALESCE(sd.total_salido, 0) - COALESCE(r.total_reservado, 0)) as libre
+    ')
             ->havingRaw('disponible > 0')
             ->get();
 

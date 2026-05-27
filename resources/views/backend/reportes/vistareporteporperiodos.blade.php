@@ -84,6 +84,48 @@
         }
         .btn-pdf:hover { transform: translateY(-1px); filter: brightness(1.08); color: #fff; }
         .divider { border: none; border-top: 2px dashed #e8eef8; margin: 10px 0 20px 0; }
+
+        /* Tabs de estado */
+        .estado-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .estado-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 2px solid #e8eef8;
+            background: #f8fafc;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            color: #6b7a99;
+            transition: all .15s;
+            user-select: none;
+        }
+        .estado-tab i { display: block; font-size: 18px; margin-bottom: 4px; }
+        .estado-tab.active {
+            border-color: #1f9e6f;
+            background: #e6f7ef;
+            color: #0b7a4f;
+        }
+        .estado-tab.active.cerrado {
+            border-color: #d97a3a;
+            background: #fdeee6;
+            color: #b35417;
+        }
+        .modo-hint {
+            margin-top: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 6px;
+            display: block;
+        }
+        .modo-hint.activo  { background: #e6f7ef; color: #0b7a4f; }
+        .modo-hint.cerrado { background: #fdeee6; color: #b35417; }
     </style>
 
     {{-- Formulario oculto para POST --}}
@@ -92,9 +134,10 @@
           method="POST"
           target="_blank">
         @csrf
-        <input type="hidden" name="idproy" id="h-idproy">
-        <input type="hidden" name="desde"  id="h-desde">
-        <input type="hidden" name="hasta"  id="h-hasta">
+        <input type="hidden" name="idproy"  id="h-idproy">
+        <input type="hidden" name="estado"  id="h-estado">
+        <input type="hidden" name="desde"   id="h-desde">
+        <input type="hidden" name="hasta"   id="h-hasta">
     </form>
 
     <div id="divcontenedor">
@@ -110,6 +153,28 @@
                             <div class="reporte-body">
 
                                 <hr class="divider">
+
+                                {{-- ── Selector de estado del proyecto ── --}}
+                                <div class="form-group">
+                                    <label class="field-label">
+                                        <i class="fas fa-toggle-on mr-1"></i>Estado del Proyecto
+                                    </label>
+                                    <div class="estado-tabs">
+                                        <div class="estado-tab active" data-estado="activo" id="tab-activo">
+                                            <i class="fas fa-folder-open"></i>
+                                            Activo
+                                        </div>
+                                        <div class="estado-tab" data-estado="cerrado" id="tab-cerrado">
+                                            <i class="fas fa-folder"></i>
+                                            Cerrado
+                                        </div>
+                                    </div>
+                                    <span id="modo-hint" class="modo-hint activo">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        <strong>Reporte de Saldos de Materiales.</strong>
+                                        Incluye todos los movimientos del proyecto.
+                                    </span>
+                                </div>
 
                                 <div class="form-group">
                                     <label class="field-label">
@@ -209,12 +274,38 @@
     <script src="{{ asset('js/alertaPersonalizada.js') }}"></script>
 
     <script>
+        var estadoActual = 'activo';
+
         $(document).ready(function () {
             $('#sel-proyecto').select2({
                 theme: "bootstrap-5",
                 language: { noResults: function () { return "No encontrado"; } }
             });
+
+            $('.estado-tab').on('click', function () {
+                cambiarEstado($(this).data('estado'));
+            });
         });
+
+        function cambiarEstado(estado) {
+            estadoActual = estado;
+
+            $('.estado-tab').removeClass('active cerrado');
+
+            if (estado === 'cerrado') {
+                $('#tab-cerrado').addClass('active cerrado');
+                $('#modo-hint').removeClass('activo').addClass('cerrado')
+                    .html('<i class="fas fa-info-circle mr-1"></i> ' +
+                        '<strong>Reporte de Saldos de Materiales Sobrantes.</strong> ' +
+                        'Incluye únicamente los movimientos de transferencia.');
+            } else {
+                $('#tab-activo').addClass('active');
+                $('#modo-hint').removeClass('cerrado').addClass('activo')
+                    .html('<i class="fas fa-info-circle mr-1"></i> ' +
+                        '<strong>Reporte de Saldos de Materiales.</strong> ' +
+                        'Incluye todos los movimientos del proyecto.');
+            }
+        }
 
         function generarPDF() {
             var idproy = $('#sel-proyecto').val();
@@ -230,6 +321,7 @@
             }
 
             $('#h-idproy').val(idproy);
+            $('#h-estado').val(estadoActual);
             $('#h-desde').val(desde);
             $('#h-hasta').val(hasta);
 

@@ -298,7 +298,6 @@
                     "onchange=\"aplicarDestinoGrupo('" + gid + "', this)\">" +
                     "<option value=''>— Elegir destino —</option>" +
                     "<option value='proyecto'>Transferir a Proyecto</option>" +
-                    "<option value='general'>Salida General</option>" +
                     "<option value='liberar'>Quitar de Reservas (cancelar)</option>" +
                     "</select>" +
                     "<select class='grupo-proyecto-select' id='gproy-" + gid + "' " +
@@ -338,7 +337,6 @@
                         "onchange=\"cambiarTipoDestino(this, " + r.id + ")\">" +
                         "<option value=''>— Elegir destino —</option>" +
                         "<option value='proyecto'>Transferir a Proyecto</option>" +
-                        "<option value='general'>Salida General</option>" +
                         "<option value='liberar'>Quitar de Reservas (cancelar)</option>" +
                         "</select>" +
                         "<select class='proyecto-select select-proyecto' id='proy-" + r.id + "'>" +
