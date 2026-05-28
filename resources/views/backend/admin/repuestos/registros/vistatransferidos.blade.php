@@ -237,6 +237,18 @@
                                        confirmButtonText: 'Aceptar'
                                    });
                                }
+                               else if (response.data.success === 2) {
+                                   Swal.fire({
+                                       title: 'Fecha de cierre inválida',
+                                       html:
+                                           'La última salida registrada es del <b>' + response.data.ultima_salida + '</b>.<br><br>' +
+                                           'La fecha de cierre (<b>' + response.data.fecha_cierre + '</b>) ' +
+                                           'no puede ser anterior a la última salida.',
+                                       icon: 'warning',
+                                       confirmButtonColor: '#d33',
+                                       confirmButtonText: 'Entendido'
+                                   });
+                               }
                                else if(response.data.success === 3){
                                    Swal.fire({
                                        title: 'Cierre Exitoso',

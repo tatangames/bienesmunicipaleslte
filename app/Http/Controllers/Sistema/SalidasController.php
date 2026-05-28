@@ -344,6 +344,21 @@ class SalidasController extends Controller
                 return ['success' => 1];
             }
 
+
+            // ── Validar que la fecha de cierre no sea anterior a la última salida ──
+            $ultimaSalida = Salidas::where('id_tipoproyecto', $request->idproyecto)
+                ->orderBy('fecha', 'desc')
+                ->first();
+
+            if ($ultimaSalida && Carbon::parse($request->fecha)->lt(Carbon::parse($ultimaSalida->fecha))) {
+                return [
+                    'success'       => 2,
+                    'fecha_cierre'  => Carbon::parse($request->fecha)->format('d-m-Y'),
+                    'ultima_salida' => Carbon::parse($ultimaSalida->fecha)->format('d-m-Y'),
+                ];
+            }
+            // ─────────────────────────────────────────────────────────────────────
+
             // Marcar como cerrado
             TipoProyecto::where('id', $request->idproyecto)->update(['transferido' => 1, 'fecha_cierre' => $request->fecha]);
 
@@ -424,10 +439,6 @@ class SalidasController extends Controller
             'departamentos'     => $departamentos,
         ]);
     }
-
-
-
-
 
 
     public function retirarMaterialDeProyectosCerrados(Request $request)
