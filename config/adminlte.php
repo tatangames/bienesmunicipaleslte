@@ -338,11 +338,7 @@ return [
                     'icon' => 'far fa-circle',
                     'route' => 'admin.materiales.index',
                 ],
-                [
-                    'text' => 'Lista de Equipos',
-                    'icon' => 'far fa-circle',
-                    'route' => 'admin.equipos.index',
-                ],
+
             ],
         ],
 

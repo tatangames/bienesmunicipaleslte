@@ -3,18 +3,12 @@
 namespace App\Http\Controllers\Sistema;
 
 use App\Http\Controllers\Controller;
-use App\Models\Departamentos;
 use App\Models\Entradas;
 use App\Models\EntradasDetalle;
-use App\Models\Equipos;
 use App\Models\InformacionGeneral;
 use App\Models\Materiales;
-use App\Models\Reserva;
 use App\Models\Salidas;
 use App\Models\SalidasDetalle;
-use App\Models\TipoProyecto;
-use App\Models\Transferencia;
-use App\Models\TransferenciaDetalle;
 use App\Models\UnidadMedida;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -29,10 +23,8 @@ class SalidasController extends Controller
 
     public function indexRegistroSalida()
     {
-        $arrayEquipos = Equipos::orderBy('nombre')->get();
 
-        return view('backend.admin.repuestos.salidas.vistasalidaregistro',
-            compact('arrayEquipos'));
+        return view('backend.admin.repuestos.salidas.vistasalidaregistro');
     }
 
 
@@ -158,7 +150,6 @@ class SalidasController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'fecha'    => 'required|date',
-            'equipo'   => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -224,7 +215,6 @@ class SalidasController extends Controller
 
             // Guardar cabecera
             $salida                  = new Salidas();
-            $salida->id_equipo       = $request->equipo;
             $salida->fecha           = $request->fecha;
             $salida->descripcion     = $request->descripcion;
             $salida->ficha_nombre    = $request->ficha_nombre;

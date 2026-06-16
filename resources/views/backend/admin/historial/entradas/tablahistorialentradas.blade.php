@@ -8,8 +8,6 @@
                             <thead>
                             <tr>
                                 <th style="width:4%">ID</th>
-                                <th style="width:14%">Tipo Entrada</th>
-                                <th style="width:14%">Tipo Compra</th>
                                 <th style="width:10%">Fecha</th>
                                 <th style="width:10%">Factura</th>
                                 <th style="width:22%">Descripción</th>
@@ -20,8 +18,6 @@
                             @foreach($arrayEntradas as $dato)
                                 <tr>
                                     <td>{{ $dato->id }}</td>
-                                    <td>{{ $dato->tipoEntrada->nombre ?? '' }}</td>
-                                    <td>{{ $dato->tipoCompra->nombre ?? '' }}</td>
                                     <td>{{ $dato->fecha_fmt }}</td>
                                     <td>{{ $dato->factura ?? '' }}</td>
                                     <td>{{ $dato->descripcion ?? '' }}</td>

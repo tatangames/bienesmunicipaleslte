@@ -27,11 +27,7 @@ class HistorialController extends Controller
 
     public function indexHistorialEntradas()
     {
-        $arrayTipoEntrada = TipoEntrada::orderBy('nombre')->get();
-        $arrayTipoCompra  = TipoCompra::orderBy('nombre')->get();
-
-        return view('backend.admin.historial.entradas.vistahistorialentradas',
-            compact('arrayTipoEntrada', 'arrayTipoCompra'));
+        return view('backend.admin.historial.entradas.vistahistorialentradas');
     }
 
     public function tablaHistorialEntradas(Request $request)
@@ -41,8 +37,6 @@ class HistorialController extends Controller
             )
             ->when($request->fecha_hasta, fn($q) => $q->whereDate('fecha', '<=', $request->fecha_hasta)
             )
-            ->when($request->tipoentrada, fn($q) => $q->where('id_tipoentrada', $request->tipoentrada)
-            )
             ->orderBy('fecha', 'desc')
             ->get()
             ->map(function ($item) {
@@ -50,8 +44,7 @@ class HistorialController extends Controller
                 return $item;
             });
 
-        return view('backend.admin.historial.entradas.tablahistorialentradas',
-            compact('arrayEntradas'));
+        return view('backend.admin.historial.entradas.tablahistorialentradas', compact('arrayEntradas'));
     }
 
     public function informacionEntrada(Request $request)
@@ -69,8 +62,6 @@ class HistorialController extends Controller
                 'fecha'         => $entrada->fecha,
                 'factura'       => $entrada->factura,
                 'descripcion'   => $entrada->descripcion,
-                'id_tipoentrada'=> $entrada->id_tipoentrada,
-                'id_tipocompra' => $entrada->id_tipocompra,
             ]
         ]);
     }
@@ -87,8 +78,6 @@ class HistorialController extends Controller
         $entrada->fecha          = $request->fecha;
         $entrada->factura        = $request->factura        ?: null;
         $entrada->descripcion    = $request->descripcion    ?: null;
-        $entrada->id_tipoentrada = $request->id_tipoentrada;
-        $entrada->id_tipocompra  = $request->id_tipocompra;
         $entrada->save();
 
         return response()->json(['success' => 1]);
@@ -288,18 +277,12 @@ class HistorialController extends Controller
 
     public function indexHistorialSalidas()
     {
-        $arrayEquipos = Equipos::orderBy('nombre')->get();
-
-        return view('backend.admin.historial.salidas.vistahistorialsalidas',
-            compact('arrayEquipos'));
+        return view('backend.admin.historial.salidas.vistahistorialsalidas');
     }
 
     public function tablaHistorialSalidas(Request $request)
     {
-        $arraySalidas = Salidas::with('equipo')
-            ->when($request->equipo, fn($q) =>
-            $q->where('id_equipo', $request->equipo)
-            )
+        $arraySalidas = Salidas::query()
             ->when($request->fecha_desde, fn($q) =>
             $q->whereDate('fecha', '>=', $request->fecha_desde)
             )
@@ -308,6 +291,7 @@ class HistorialController extends Controller
             )
             ->when($request->material, function ($q) use ($request) {
                 $busqueda = '%' . $request->material . '%';
+
                 $q->whereHas('detalle.entradaDetalle.material', function ($q2) use ($busqueda) {
                     $q2->where('nombre', 'LIKE', $busqueda);
                 });
@@ -338,7 +322,6 @@ class HistorialController extends Controller
                 'id'              => $salida->id,
                 'fecha'           => $salida->fecha,
                 'descripcion'     => $salida->descripcion,
-                'id_equipo'       => $salida->id_equipo,
                 'ficha_nombre'    => $salida->ficha_nombre,
                 'ficha_talonario' => $salida->ficha_talonario,
             ]
@@ -355,7 +338,6 @@ class HistorialController extends Controller
 
         $salida->fecha           = $request->fecha;
         $salida->descripcion     = $request->descripcion     ?: null;
-        $salida->id_equipo       = $request->id_equipo;
         $salida->ficha_nombre    = $request->ficha_nombre    ?: null;
         $salida->ficha_talonario = $request->ficha_talonario ?: null;
         $salida->save();

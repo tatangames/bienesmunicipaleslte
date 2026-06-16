@@ -8,7 +8,6 @@
                             <thead>
                             <tr>
                                 <th style="width:5%">ID</th>
-                                <th style="width:14%">Equipo</th>
                                 <th style="width:10%">Fecha</th>
                                 <th style="width:10%">Talonario</th>
                                 <th style="width:13%">Recibe</th>
@@ -20,7 +19,6 @@
                             @foreach($arraySalidas as $dato)
                                 <tr>
                                     <td>{{ $dato->id }}</td>
-                                    <td>{{ $dato->equipo->nombre ?? '' }}</td>
                                     <td>{{ $dato->fecha_fmt }}</td>
                                     <td>{{ $dato->ficha_talonario ?? '' }}</td>
                                     <td>{{ $dato->ficha_nombre ?? '' }}</td>

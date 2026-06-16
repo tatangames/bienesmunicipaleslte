@@ -51,15 +51,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row align-items-end">
-                            <div class="col-md-3">
-                                <label class="font-weight-bold">Equipo</label>
-                                <select class="form-control" id="filtro-equipo">
-                                    <option value="">— Todos —</option>
-                                    @foreach($arrayEquipos as $eq)
-                                        <option value="{{ $eq->id }}">{{ $eq->nombre }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+
                             <div class="col-md-3">
                                 <label class="font-weight-bold">Fecha desde</label>
                                 <input type="date" class="form-control" id="filtro-fecha-desde">
@@ -129,15 +121,7 @@
                             <label>Fecha <span class="text-danger">*</span></label>
                             <input type="date" id="fecha-editar" class="form-control">
                         </div>
-                        <div class="form-group">
-                            <label>Equipo <span class="text-danger">*</span></label>
-                            <select id="select-equipo-editar" class="form-control" style="width:100%">
-                                <option value="">Seleccione...</option>
-                                @foreach($arrayEquipos as $eq)
-                                    <option value="{{ $eq->id }}">{{ $eq->nombre }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+
                         <div class="form-group">
                             <label>N. Talonario <small class="text-muted">(Opcional)</small></label>
                             <input type="text" id="talonario-editar" class="form-control" maxlength="100">
@@ -258,13 +242,11 @@
             }
 
             function cargarTabla() {
-                const equipo     = $('#filtro-equipo').val();
                 const fechaDesde = $('#filtro-fecha-desde').val();
                 const fechaHasta = $('#filtro-fecha-hasta').val();
                 const material   = $('#filtro-material').val().trim();
 
                 const params = new URLSearchParams();
-                if (equipo)     params.append('equipo',      equipo);
                 if (fechaDesde) params.append('fecha_desde', fechaDesde);
                 if (fechaHasta) params.append('fecha_hasta', fechaHasta);
                 if (material)   params.append('material',    material);
@@ -276,25 +258,13 @@
             window.recargar = function () { cargarTabla(); };
 
             window.limpiarFiltros = function () {
-                $('#filtro-equipo').val('').trigger('change');
                 $('#filtro-fecha-desde').val('');
                 $('#filtro-fecha-hasta').val('');
                 $('#filtro-material').val('');
                 cargarTabla();
             };
 
-            $('#filtro-equipo').select2({
-                theme: 'bootstrap-5',
-                placeholder: '— Todos —',
-                allowClear: true,
-                language: { noResults: function () { return 'No encontrado'; } }
-            });
 
-            $('#select-equipo-editar').select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $('#modalEditar'),
-                language: { noResults: function () { return 'No encontrado'; } }
-            });
 
             // Delegación botones detalle
             $(document).on('click', '.btn-eliminar-detalle-salida', function () {
@@ -331,19 +301,16 @@
         function editar() {
             const id          = $('#id-editar').val();
             const fecha       = $('#fecha-editar').val().trim();
-            const equipo      = $('#select-equipo-editar').val();
             const descripcion = $('#descripcion-editar').val().trim();
             const talonario   = $('#talonario-editar').val().trim();
             const fichaNombre = $('#fichaNombre-editar').val().trim();
 
             if (!fecha)  { toastr.error('La fecha es requerida');  return; }
-            if (!equipo) { toastr.error('El equipo es requerido'); return; }
 
             openLoading();
             const formData = new FormData();
             formData.append('id',              id);
             formData.append('fecha',           fecha);
-            formData.append('id_equipo',       equipo);
             formData.append('descripcion',     descripcion);
             formData.append('ficha_talonario', talonario);
             formData.append('ficha_nombre',    fichaNombre);

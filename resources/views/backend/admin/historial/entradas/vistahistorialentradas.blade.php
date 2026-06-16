@@ -113,24 +113,7 @@
                             <label>Fecha <span class="text-danger">*</span></label>
                             <input type="date" id="fecha-editar" class="form-control">
                         </div>
-                        <div class="form-group">
-                            <label>Tipo de Entrada <span class="text-danger">*</span></label>
-                            <select id="select-tipoentrada-editar" class="form-control" style="width:100%">
-                                <option value="">Seleccione...</option>
-                                @foreach($arrayTipoEntrada as $te)
-                                    <option value="{{ $te->id }}">{{ $te->nombre }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Tipo de Compra <span class="text-danger">*</span></label>
-                            <select id="select-tipocompra-editar" class="form-control" style="width:100%">
-                                <option value="">Seleccione...</option>
-                                @foreach($arrayTipoCompra as $tc)
-                                    <option value="{{ $tc->id }}">{{ $tc->nombre }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+
                         <div class="form-group">
                             <label>Factura <small class="text-muted">(Opcional)</small></label>
                             <input type="text" id="factura-editar" class="form-control" maxlength="100">
@@ -320,17 +303,7 @@
 
             cargarTabla();
 
-            // ── Select2 modales ───────────────────────────────────
-            $('#select-tipoentrada-editar').select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $('#modalEditar'),
-                language: { noResults: function () { return 'No encontrado'; } }
-            });
-            $('#select-tipocompra-editar').select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $('#modalEditar'),
-                language: { noResults: function () { return 'No encontrado'; } }
-            });
+
 
             // ── Delegación botones detalle ────────────────────────
             $(document).on('click', '.btn-editar-detalle', function () {
@@ -364,8 +337,6 @@
                         $('#fecha-editar').val(e.fecha);
                         $('#factura-editar').val(e.factura ?? '');
                         $('#descripcion-editar').val(e.descripcion ?? '');
-                        $('#select-tipoentrada-editar').val(e.id_tipoentrada).trigger('change');
-                        $('#select-tipocompra-editar').val(e.id_tipocompra).trigger('change');
                         $('#modalEditar').modal('show');
                     } else {
                         toastr.error('No se pudo cargar la información');
@@ -377,21 +348,15 @@
         function editar() {
             const id          = $('#id-editar').val();
             const fecha       = $('#fecha-editar').val().trim();
-            const tipoentrada = $('#select-tipoentrada-editar').val();
-            const tipocompra  = $('#select-tipocompra-editar').val();
             const factura     = $('#factura-editar').val().trim();
             const descripcion = $('#descripcion-editar').val().trim();
 
             if (!fecha)       { toastr.error('La fecha es requerida');        return; }
-            if (!tipoentrada) { toastr.error('Tipo de Entrada es requerido'); return; }
-            if (!tipocompra)  { toastr.error('Tipo de Compra es requerido');  return; }
 
             openLoading();
             const formData = new FormData();
             formData.append('id',             id);
             formData.append('fecha',          fecha);
-            formData.append('id_tipoentrada', tipoentrada);
-            formData.append('id_tipocompra',  tipocompra);
             formData.append('factura',        factura);
             formData.append('descripcion',    descripcion);
 

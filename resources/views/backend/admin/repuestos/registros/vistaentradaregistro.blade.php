@@ -76,31 +76,6 @@
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-5">
-                                        <div class="form-group">
-                                            <label>Tipo de Entrada: <span class="text-danger">*</span></label>
-                                            <select class="form-control" id="select-tipoentrada" style="width:100%">
-                                                <option value="">Seleccione...</option>
-                                                @foreach($arrayTipoEntrada as $te)
-                                                    <option value="{{ $te->id }}">{{ $te->nombre }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-5">
-                                        <div class="form-group">
-                                            <label>Tipo de Compra: <span class="text-danger">*</span></label>
-                                            <select class="form-control" id="select-tipocompra" style="width:100%">
-                                                <option value="">Seleccione...</option>
-                                                @foreach($arrayTipoCompra as $tc)
-                                                    <option value="{{ $tc->id }}">{{ $tc->nombre }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
                                     <div class="col-md-8">
                                         <div class="form-group">
                                             <label>Descripción (Opcional):</label>
@@ -250,17 +225,6 @@
             var hoy = new Date();
             document.getElementById('fecha').value = hoy.toJSON().slice(0, 10);
 
-            // Select2
-            $('#select-tipoentrada').select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $('body'),
-                language: { noResults: function () { return 'No encontrado'; } }
-            });
-            $('#select-tipocompra').select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $('body'),
-                language: { noResults: function () { return 'No encontrado'; } }
-            });
 
             // Cerrar droplista al click fuera
             $(document).click(function () {
@@ -400,12 +364,10 @@
             var fecha       = document.getElementById('fecha').value;
             var factura     = document.getElementById('factura').value;
             var descripcion = document.getElementById('descripcion').value;
-            var tipoentrada = document.getElementById('select-tipoentrada').value;
-            var tipocompra  = document.getElementById('select-tipocompra').value;
+
 
             if (!fecha)       { toastr.error('Fecha es requerida'); return; }
-            if (!tipoentrada) { toastr.error('Tipo de Entrada es requerido'); return; }
-            if (!tipocompra)  { toastr.error('Tipo de Compra es requerido'); return; }
+
 
             var nFilas = $('#matriz tbody tr').length;
             if (nFilas === 0) { toastr.error('Agregue al menos un material'); return; }
@@ -450,8 +412,7 @@
             formData.append('fecha',           fecha);
             formData.append('factura',         factura);
             formData.append('descripcion',     descripcion);
-            formData.append('tipoentrada',     tipoentrada);
-            formData.append('tipocompra',      tipocompra);
+
             formData.append('contenedorArray', JSON.stringify(contenedorArray));
 
             openLoading();

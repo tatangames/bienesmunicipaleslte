@@ -103,26 +103,13 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label>Desripción: <small class="text-muted">(Opcional)</small></label>
+                                            <label>Nombre Ficha: <small class="text-muted">(Opcional)</small></label>
                                             <input type="text" class="form-control" autocomplete="off"
                                                    maxlength="100" id="ficha_nombre" placeholder="Nombre...">
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Equipo: <span class="text-danger">*</span></label>
-                                            <select class="form-control" id="select-equipo" style="width:100%">
-                                                <option value="">Seleccione un equipo...</option>
-                                                @foreach($arrayEquipos as $eq)
-                                                    <option value="{{ $eq->id }}">{{ $eq->nombre }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
 
                                 <div class="row">
                                     <div class="col-md-8">
@@ -136,7 +123,7 @@
                                         <div class="form-group">
                                             <button type="button" id="botonaddmaterial"
                                                     onclick="abrirModal()"
-                                                    class="btn btn-primary btn-sm" disabled>
+                                                    class="btn btn-primary btn-sm">
                                                 <i class="fas fa-search mr-1"></i> Buscar Material
                                             </button>
                                         </div>
@@ -327,18 +314,6 @@
             var hoy = new Date();
             document.getElementById('fecha').value = hoy.toJSON().slice(0, 10);
 
-            $('#select-equipo').select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $('body'),
-                language: { noResults: function () { return 'No encontrado'; } }
-            });
-
-            $('#select-equipo').on('change', function () {
-                var val = $(this).val();
-                $('#botonaddmaterial').prop('disabled', !val || val === '');
-                $('#matriz tbody tr').remove();
-                actualizarContador();
-            });
 
             $(document).click(function () { $('.droplista').hide(); });
         });
@@ -481,13 +456,11 @@
             colorBlancoTabla();
 
             var fecha          = document.getElementById('fecha').value;
-            var equipo         = document.getElementById('select-equipo').value;
             var descripcion    = document.getElementById('descripcion').value;
             var fichaNombre    = document.getElementById('ficha_nombre').value;
             var fichaTalonario = document.getElementById('ficha_talonario').value;
 
             if (!fecha)  { toastr.error('Fecha es requerida');  return; }
-            if (!equipo) { toastr.error('Seleccione un equipo'); return; }
 
             if ($('#matriz tbody tr').length === 0) {
                 toastr.error('Agregue al menos un material para generar el PDF');
@@ -519,7 +492,6 @@
             var fields = {
                 '_token':          document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'fecha':           fecha,
-                'equipo':          equipo,
                 'descripcion':     descripcion,
                 'ficha_nombre':    fichaNombre,
                 'ficha_talonario': fichaTalonario,
@@ -557,13 +529,11 @@
 
         function guardarSalida() {
             var fecha          = document.getElementById('fecha').value;
-            var equipo         = document.getElementById('select-equipo').value;
             var descripcion    = document.getElementById('descripcion').value;
             var fichaNombre    = document.getElementById('ficha_nombre').value;
             var fichaTalonario = document.getElementById('ficha_talonario').value;
 
             if (!fecha)  { toastr.error('Fecha es requerida');  return; }
-            if (!equipo) { toastr.error('Equipo es requerido'); return; }
 
             if ($('#matriz tbody tr').length === 0) {
                 toastr.error('Agregue al menos un material'); return;
@@ -595,7 +565,6 @@
             openLoading();
             var formData = new FormData();
             formData.append('fecha',           fecha);
-            formData.append('equipo',          equipo);
             formData.append('descripcion',     descripcion);
             formData.append('ficha_nombre',    fichaNombre);
             formData.append('ficha_talonario', fichaTalonario);

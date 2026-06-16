@@ -58,13 +58,6 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/admin/unidadmedida/informacion', [ConfiguracionController::class, 'informacionUnidadMedida']);
     Route::post('/admin/unidadmedida/editar', [ConfiguracionController::class, 'editarUnidadMedida']);
 
-    // --- EQUIPOS ---
-    Route::get('/admin/equipos/index', [ConfiguracionController::class,'indexEquipos'])->name('admin.equipos.index');
-    Route::get('/admin/equipos/tabla/index', [ConfiguracionController::class,'tablaEquipos']);
-    Route::post('/admin/equipos/nuevo', [ConfiguracionController::class, 'nuevaEquipos']);
-    Route::post('/admin/equipos/informacion', [ConfiguracionController::class, 'informacionEquipos']);
-    Route::post('/admin/equipos/editar', [ConfiguracionController::class, 'editarEquipos']);
-
     // --- RUBRO ---
     Route::get('/admin/rubro/index', [ConfiguracionController::class,'indexRubro'])->name('admin.rubro.index');
     Route::get('/admin/rubro/tabla/index', [ConfiguracionController::class,'tablaRubro']);

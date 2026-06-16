@@ -137,11 +137,7 @@ class RepuestosController extends Controller
 
     public function indexRegistroEntrada()
     {
-        $arrayTipoEntrada = TipoEntrada::orderBy('nombre')->get();
-        $arrayTipoCompra  = TipoCompra::orderBy('nombre')->get();
-
-        return view('backend.admin.repuestos.registros.vistaentradaregistro',
-            compact('arrayTipoEntrada', 'arrayTipoCompra'));
+        return view('backend.admin.repuestos.registros.vistaentradaregistro');
     }
 
 
@@ -197,8 +193,6 @@ class RepuestosController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'fecha'        => 'required|date',
-            'tipoentrada'  => 'required',
-            'tipocompra'   => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -216,8 +210,6 @@ class RepuestosController extends Controller
 
             // ── Cabecera ──
             $entrada = new Entradas();
-            $entrada->id_tipoentrada = $request->tipoentrada;
-            $entrada->id_tipocompra  = $request->tipocompra;
             $entrada->fecha          = $request->fecha;
             $entrada->factura        = $request->factura;
             $entrada->descripcion    = $request->descripcion;

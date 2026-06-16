@@ -3,16 +3,12 @@
 namespace App\Http\Controllers\Sistema;
 
 use App\Http\Controllers\Controller;
-use App\Models\Departamentos;
 use App\Models\Entradas;
 use App\Models\EntradasDetalle;
 use App\Models\InformacionGeneral;
 use App\Models\Materiales;
 use App\Models\Salidas;
 use App\Models\SalidasDetalle;
-use App\Models\TipoProyecto;
-use App\Models\Transferencia;
-use App\Models\TransferenciaDetalle;
 use App\Models\UnidadMedida;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -215,7 +211,6 @@ class ReportesController extends Controller
         } else {
 
             $query = Salidas::with([
-                'equipo',
                 'detalle.entradaDetalle.material.unidadMedida',
                 'detalle.entradaDetalle.material.objetoEspecifico',
             ]);
@@ -227,26 +222,36 @@ class ReportesController extends Controller
                 $descripcion = $salida->descripcion ?? '';
                 $fichaNombre = $salida->ficha_nombre    ?? '';
                 $fichaTalon  = $salida->ficha_talonario ?? '';
-                $equipo      = $salida->equipo->nombre  ?? '';
 
                 $tabla .= "
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:2px; border:0.8px solid #ccc;'>
+
+
     <tr>
-        <td style='width:13%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Fecha</td>
-        <td style='width:20%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$fechaFmt</td>
-        <td style='width:15%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Equipo</td>
-        <td style='width:52%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$equipo</td>
+        <td style='width:12%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
+            Ficha
+        </td>
+        <td style='width:38%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
+            $fichaNombre
+        </td>
+
+        <td style='width:12%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
+            Talonario
+        </td>
+        <td style='width:38%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
+            $fichaTalon
+        </td>
     </tr>
+
     <tr>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Ficha</td>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$fichaNombre</td>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Talonario</td>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$fichaTalon</td>
+        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
+            Descripción
+        </td>
+        <td colspan='3' style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
+            $descripcion
+        </td>
     </tr>
-    <tr>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Descripción</td>
-        <td colspan='3' style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$descripcion</td>
-    </tr>
+
 </table>";
 
                 $tabla .= $theadSalidas;
@@ -577,8 +582,6 @@ class ReportesController extends Controller
         } else {
 
             $query = Entradas::with([
-                'tipoEntrada',
-                'tipoCompra',
                 'detalle.material.unidadMedida',
                 'detalle.material.objetoEspecifico',
             ]);
@@ -587,27 +590,22 @@ class ReportesController extends Controller
 
             foreach ($arrayEntradas as $entrada) {
                 $fechaFmt    = date('d-m-Y', strtotime($entrada->fecha));
-                $tipoEntrada = $entrada->tipoEntrada->nombre ?? '';
-                $tipoCompra  = $entrada->tipoCompra->nombre  ?? '';
                 $factura     = $entrada->factura     ?? '';
                 $descripcion = $entrada->descripcion ?? '';
 
                 $tabla .= "
-<table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:2px; border:0.8px solid #ccc;'>
-    <tr>
-        <td style='width:13%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Fecha</td>
-        <td style='width:20%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$fechaFmt</td>
-        <td style='width:15%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Tipo Entrada</td>
-        <td style='width:20%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$tipoEntrada</td>
-        <td style='width:12%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Tipo Compra</td>
-        <td style='width:20%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$tipoCompra</td>
-    </tr>
-    <tr>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Factura</td>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$factura</td>
-        <td colspan='4' style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$descripcion</td>
-    </tr>
-</table>";
+            <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:2px; border:0.8px solid #ccc;'>
+              <tr>
+                <td style='width:20%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Fecha</td>
+                <td style='width:30%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$fechaFmt</td>
+                <td style='width:20%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Factura</td>
+                <td style='width:30%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$factura</td>
+            </tr>
+            <tr>
+                <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>Descripción</td>
+                <td colspan='3' style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>$descripcion</td>
+            </tr>
+            </table>";
 
                 $tabla .= $theadEntradas;
 
@@ -791,14 +789,12 @@ class ReportesController extends Controller
     public function pdfReporteSalidaTalonario(Request $request)
     {
         $fecha          = $request->input('fecha', '');
-        $idEquipo       = $request->input('equipo', '');
         $descripcion    = $request->input('descripcion', '');
         $nTalonario     = $request->input('ficha_talonario', '');
         $nombreRecibe   = $request->input('ficha_nombre', '');
         $contenedorJson = $request->input('contenedorArray', '[]');
         $contenedor     = json_decode($contenedorJson, true) ?? [];
 
-        $infoEquipo = \App\Models\Equipos::find($idEquipo);
         $fechaFmt   = $fecha ? date('d/m/Y', strtotime($fecha)) : '';
         $logoalcaldia = 'images/logo.png';
 
@@ -845,12 +841,11 @@ class ReportesController extends Controller
 <table width='100%' style='font-family:Arial, sans-serif; font-size:12px; border-collapse:collapse;'>
     <tr>
         <td width='35%'><strong>FECHA:</strong> &nbsp; {$fechaFmt}</td>
-        <td width='35%'><strong>EQUIPO:</strong> &nbsp; " . e($infoEquipo->nombre ?? '') . "</td>
         <td width='30%' style='text-align:center;'><strong>N.</strong> &nbsp; " . e($nTalonario) . "</td>
     </tr>
     <tr>
         <td colspan='3' style='padding-top:6px;'>
-            <strong>DESCRIPCIÓN:</strong> &nbsp; " . e($nombreRecibe) . "
+            <strong>NOMBRE:</strong> &nbsp; " . e($nombreRecibe) . "
         </td>
     </tr>";
 
