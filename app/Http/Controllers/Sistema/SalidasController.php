@@ -135,21 +135,10 @@ class SalidasController extends Controller
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
     public function guardarSalida(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'fecha'    => 'required|date',
+            'fecha' => 'required|date',
         ]);
 
         if ($validator->fails()) {
@@ -162,14 +151,15 @@ class SalidasController extends Controller
             return ['success' => 0];
         }
 
-        // Agrupar por id_entrada_detalle y sumar cantidades
+        // Agrupar por id_entrada_detalle, sumando cantidades y tomando la última observación
         $agrupado = [];
         foreach ($contenedor as $item) {
             $id = $item['infoIdEntradaDeta'];
             if (!isset($agrupado[$id])) {
-                $agrupado[$id] = 0;
+                $agrupado[$id] = ['cantidad' => 0, 'observacion' => ''];
             }
-            $agrupado[$id] += (int) $item['infoCantidad'];
+            $agrupado[$id]['cantidad']    += (int)$item['infoCantidad'];
+            $agrupado[$id]['observacion']  = $item['observacion'] ?? '';
         }
 
         DB::beginTransaction();
@@ -177,8 +167,7 @@ class SalidasController extends Controller
         try {
             $fila = 1;
 
-            // Validar disponibilidad por cada entrada_detalle
-            foreach ($agrupado as $idEntradaDetalle => $cantidadSalida) {
+            foreach ($agrupado as $idEntradaDetalle => $datos) {
 
                 $disponible = DB::table('entradas_detalle as ed')
                     ->leftJoin(
@@ -193,7 +182,7 @@ class SalidasController extends Controller
                     ->selectRaw('(ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible')
                     ->value('disponible');
 
-                if (is_null($disponible) || $cantidadSalida > $disponible) {
+                if (is_null($disponible) || $datos['cantidad'] > $disponible) {
                     DB::rollback();
 
                     $nombreMaterial = DB::table('entradas_detalle as ed')
@@ -202,11 +191,11 @@ class SalidasController extends Controller
                         ->value('m.nombre');
 
                     return [
-                        'success'         => 2,
-                        'fila'            => $fila,
-                        'nombre_material' => $nombreMaterial ?? 'Material desconocido',
-                        'cantidad_pedida' => $cantidadSalida,
-                        'disponible'      => (int) $disponible,
+                        'success'          => 2,
+                        'fila'             => $fila,
+                        'nombre_material'  => $nombreMaterial ?? 'Material desconocido',
+                        'cantidad_pedida'  => $datos['cantidad'],
+                        'disponible'       => (int)$disponible,
                     ];
                 }
 
@@ -219,14 +208,21 @@ class SalidasController extends Controller
             $salida->descripcion     = $request->descripcion;
             $salida->ficha_nombre    = $request->ficha_nombre;
             $salida->ficha_talonario = $request->ficha_talonario;
+            $salida->numero_contrato = $request->numero_contrato;
+            $salida->numero_orden    = $request->numero_orden;
+            $salida->autoriza_a      = $request->autoriza_entrega;
+            $salida->peticion_a      = $request->peticion_de;
+            $salida->para_uso        = $request->para_uso_en;
+            $salida->nombre_firma_1  = $request->firma_derecha;
             $salida->save();
 
             // Guardar detalle
-            foreach ($agrupado as $idEntradaDetalle => $cantidadSalida) {
-                $detalle                     = new SalidasDetalle();
-                $detalle->id_salida          = $salida->id;
-                $detalle->id_entrada_detalle = $idEntradaDetalle;
-                $detalle->cantidad_salida    = $cantidadSalida;
+            foreach ($agrupado as $idEntradaDetalle => $datos) {
+                $detalle                      = new SalidasDetalle();
+                $detalle->id_salida           = $salida->id;
+                $detalle->id_entrada_detalle  = $idEntradaDetalle;
+                $detalle->cantidad_salida     = $datos['cantidad'];
+                $detalle->observaciones       = $datos['observacion'];
                 $detalle->save();
             }
 
@@ -239,8 +235,6 @@ class SalidasController extends Controller
             return ['success' => 99];
         }
     }
-
-
 
 
 

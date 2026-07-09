@@ -133,10 +133,10 @@
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label>Precio <span style="color:red">*</span></label>
+                                    <label>Precio (4 decimales) <span style="color:red">*</span></label>
                                     <div class="col-md-3">
                                     <input type="number" min="0" max="1000000" autocomplete="off"
-                                           class="form-control" id="precio-producto" placeholder="0.00">
+                                           class="form-control" id="precio-producto" placeholder="0.0000">
                                     </div>
                                 </div>
                             </div>

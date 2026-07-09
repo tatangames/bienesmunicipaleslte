@@ -79,6 +79,14 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/admin/objetoespecifico/informacion', [ConfiguracionController::class, 'informacionObjetoEspecifico']);
     Route::post('/admin/objetoespecifico/editar', [ConfiguracionController::class, 'editarObjetoEspecifico']);
 
+    // --- PROVEEDOR ---
+    Route::get('/admin/proveedor/index', [ConfiguracionController::class,'vistaProveedor'])->name('admin.proveedor.index');
+    Route::get('/admin/proveedor/tabla/index', [ConfiguracionController::class,'tablaProveedor']);
+    Route::post('/admin/proveedor/nuevo', [ConfiguracionController::class,'nuevoProveedor']);
+    Route::post('/admin/proveedor/informacion', [ConfiguracionController::class,'infoProveedor']);
+    Route::post('/admin/proveedor/editar', [ConfiguracionController::class,'actualizarProveedor']);
+
+
     // --- INVENTARIO ---
     Route::get('/admin/inventario/index', [RepuestosController::class,'index'])->name('admin.materiales.index');
     Route::get('/admin/inventario/tabla/index', [RepuestosController::class,'tablaMateriales']);
@@ -86,18 +94,6 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/admin/inventario/informacion', [RepuestosController::class, 'informacionMaterial']);
     Route::post('/admin/inventario/editar', [RepuestosController::class, 'editarMaterial']);
     Route::post('/admin/inventario/catalogo', [RepuestosController::class, 'inventarioConteoDeMateriales']);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -147,6 +143,11 @@ Route::middleware('auth:admin')->group(function () {
     // --- ACTUALIZAR DISTANCIA FIRMAS ---
     Route::post('/admin/informacion/actualizar/px', [ReportesController::class, 'actualizarPxInformacionGeneral'])
         ->name('admin.informacion.actualizar.px');
+
+    // --- JEFE FIRMAS ---
+    Route::get('/admin/jefefirma/index', [ConfiguracionController::class,'vistaJefeFirmas'])->name('admin.jefefirma.index');
+    Route::post('/admin/jefefirma/actualizar',  [ConfiguracionController::class,'actualizarJefeFirmas']);
+
 
 
 

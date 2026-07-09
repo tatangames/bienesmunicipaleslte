@@ -16,7 +16,13 @@ return new class extends Migration
 
             // REPORTE PIXELES DISTANCIAS
             $table->integer('px_firmas');
-            $table->integer('px_observaciones');
+
+            $table->string('nombre_firma_1', 100)->nullable();
+            $table->string('nombre_firma_2', 100)->nullable();
+            $table->string('nombre_firma_3', 100)->nullable();
+
+            $table->text('encabezado')->nullable();
+            $table->text('pie_pagina')->nullable();
         });
     }
 

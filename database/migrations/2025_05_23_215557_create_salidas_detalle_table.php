@@ -17,6 +17,8 @@ return new class extends Migration
             $table->bigInteger('id_entrada_detalle')->unsigned();
             $table->integer('cantidad_salida');
 
+            $table->string('observaciones', 200)->nullable();
+
             $table->foreign('id_salida')->references('id')->on('salidas');
             $table->foreign('id_entrada_detalle')->references('id')->on('entradas_detalle');
         });

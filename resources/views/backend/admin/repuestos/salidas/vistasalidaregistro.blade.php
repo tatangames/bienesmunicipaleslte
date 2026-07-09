@@ -87,6 +87,7 @@
                             </div>
                             <div class="card-body">
 
+                                {{-- Fila 1: Fecha · Talonario · Nombre Ficha --}}
                                 <div class="row">
                                     <div class="col-md-3">
                                         <div class="form-group">
@@ -110,7 +111,50 @@
                                     </div>
                                 </div>
 
+                                {{-- Fila 2: Número Contrato · Número Orden --}}
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Número Contrato: <small class="text-muted">(Opcional)</small></label>
+                                            <input type="text" class="form-control" autocomplete="off"
+                                                   maxlength="100" id="numero_contrato" placeholder="Ej: CONT-2025-001">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Número Orden: <small class="text-muted">(Opcional)</small></label>
+                                            <input type="text" class="form-control" autocomplete="off"
+                                                   maxlength="100" id="numero_orden" placeholder="Ej: ORD-2025-001">
+                                        </div>
+                                    </div>
+                                </div>
 
+                                {{-- Fila 3: Autoriza · Petición · Para uso --}}
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Autoriza la entrega a: <small class="text-muted">(Opcional)</small></label>
+                                            <input type="text" class="form-control" autocomplete="off"
+                                                   maxlength="200" id="autoriza_entrega" placeholder="Nombre o cargo...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>A petición de: <small class="text-muted">(Opcional)</small></label>
+                                            <input type="text" class="form-control" autocomplete="off"
+                                                   maxlength="200" id="peticion_de" placeholder="Nombre o cargo...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Para uso en: <small class="text-muted">(Opcional)</small></label>
+                                            <input type="text" class="form-control" autocomplete="off"
+                                                   maxlength="200" id="para_uso_en" placeholder="Descripción del uso...">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Fila 4: Descripción · Botón buscar --}}
                                 <div class="row">
                                     <div class="col-md-8">
                                         <div class="form-group">
@@ -130,6 +174,33 @@
                                     </div>
                                 </div>
 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- ══ Card Nombres / Firmas ══ --}}
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-10">
+                        <div class="card card-gray-dark">
+                            <div class="card-header">
+                                <h3 class="card-title">Firmas / Nombres</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>Firma Derecha: <small class="text-muted">(Opcional)</small></label>
+                                            <input type="text" class="form-control" autocomplete="off"
+                                                   maxlength="100" id="firma_derecha" placeholder="Nombre...">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -202,6 +273,8 @@
                             <div class="card-body">
 
                                 <input type="hidden" id="id-material-seleccionado">
+                                {{-- Guardamos la unidad de medida para pasarla al detalle --}}
+                                <input type="hidden" id="info-medida-hidden">
 
                                 <div class="form-row mb-3">
                                     <div class="col-md-9">
@@ -246,9 +319,7 @@
         <section class="content-header">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h2>
-                        Detalle de Salida
-                    </h2>
+                    <h2>Detalle de Salida</h2>
                 </div>
             </div>
         </section>
@@ -264,10 +335,12 @@
                             <table class="table table-bordered table-hover mb-0" id="matriz">
                                 <thead>
                                 <tr>
-                                    <th style="width:6%">#</th>
-                                    <th style="width:55%">Material</th>
-                                    <th style="width:15%">Cantidad Salida</th>
-                                    <th style="width:14%">Opciones</th>
+                                    <th style="width:5%">#</th>
+                                    <th style="width:35%">Material</th>
+                                    <th style="width:10%">U/M</th>
+                                    <th style="width:10%">Cantidad</th>
+                                    <th style="width:30%">Observaciones</th>
+                                    <th style="width:10%">Opciones</th>
                                 </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -295,7 +368,6 @@
             </button>
         </div>
 
-
     </div>
 
 @stop
@@ -313,8 +385,6 @@
         $(function () {
             var hoy = new Date();
             document.getElementById('fecha').value = hoy.toJSON().slice(0, 10);
-
-
             $(document).click(function () { $('.droplista').hide(); });
         });
 
@@ -362,6 +432,8 @@
                     $('#id-material-seleccionado').val(edrop.id);
                     $('#info-material').val(response.data.nombreMaterial);
                     $('#info-medida').val(response.data.nombreMedida);
+                    // Guardar U/M en hidden para pasarla al detalle
+                    $('#info-medida-hidden').val(response.data.nombreMedida);
 
                     $.each(response.data.arrayIngreso, function (key, val) {
                         var fila =
@@ -418,8 +490,9 @@
 
             if (habraSalida) { toastr.error('Registre mínimo 1 salida'); return; }
 
-            var nombreTexto = document.getElementById('info-material').value;
-            var nFilas      = $('#matriz tbody tr').length;
+            var nombreTexto  = document.getElementById('info-material').value;
+            var medidaTexto  = document.getElementById('info-medida-hidden').value;
+            var nFilas       = $('#matriz tbody tr').length;
 
             for (var z = 0; z < arrayCantidadSalida.length; z++) {
                 var fc2 = arrayCantidadSalida[z];
@@ -429,12 +502,21 @@
                         '<tr>' +
                         '<td><span class="num-fila">' + nFilas + '</span></td>' +
                         '<td>' +
-                        '<input name="idmaterialArray[]" type="hidden" data-idmaterialArray="' + arrayIdEntradaDetalle[z] + '" data-nombreMaterial="' + nombreTexto + '">' +
+                        '<input name="idmaterialArray[]" type="hidden"' +
+                        ' data-idmaterialArray="' + arrayIdEntradaDetalle[z] + '"' +
+                        ' data-nombreMaterial="' + nombreTexto + '"' +
+                        ' data-unidadMedida="' + medidaTexto + '">' +
                         nombreTexto +
                         '</td>' +
+                        '<td>' + medidaTexto + '</td>' +
                         '<td>' +
                         '<input name="salidaArray[]" type="hidden" data-cantidadSalida="' + fc2 + '">' +
                         fc2 +
+                        '</td>' +
+                        '<td>' +
+                        '<input name="observacionesArray[]" type="text"' +
+                        ' class="form-control form-control-sm" maxlength="100"' +
+                        ' placeholder="Observación...">' +
                         '</td>' +
                         '<td>' +
                         '<button type="button" class="btn btn-danger btn-sm btn-block" onclick="borrarFila(this)">' +
@@ -451,52 +533,73 @@
             toastr.success('Agregado al detalle');
         }
 
-        // ── Generar PDF ───────────────────────────────────────────────
-        function generarPdfTalonario() {
-            colorBlancoTabla();
+        // ── Leer campos comunes ───────────────────────────────────────
+        function leerCampos() {
+            return {
+                fecha:            document.getElementById('fecha').value,
+                descripcion:      document.getElementById('descripcion').value,
+                ficha_nombre:     document.getElementById('ficha_nombre').value,
+                ficha_talonario:  document.getElementById('ficha_talonario').value,
+                numero_contrato:  document.getElementById('numero_contrato').value,
+                numero_orden:     document.getElementById('numero_orden').value,
+                autoriza_entrega: document.getElementById('autoriza_entrega').value,
+                peticion_de:      document.getElementById('peticion_de').value,
+                para_uso_en:      document.getElementById('para_uso_en').value,
+                firma_derecha:    document.getElementById('firma_derecha').value,
+            };
+        }
 
-            var fecha          = document.getElementById('fecha').value;
-            var descripcion    = document.getElementById('descripcion').value;
-            var fichaNombre    = document.getElementById('ficha_nombre').value;
-            var fichaTalonario = document.getElementById('ficha_talonario').value;
-
-            if (!fecha)  { toastr.error('Fecha es requerida');  return; }
-
-            if ($('#matriz tbody tr').length === 0) {
-                toastr.error('Agregue al menos un material para generar el PDF');
-                return;
-            }
-
+        // ── Construir contenedorArray desde tabla #matriz ─────────────
+        function construirContenedor(incluirNombre) {
             var idEntradaDetalle = $("input[name='idmaterialArray[]']")
                 .map(function () { return $(this).attr('data-idmaterialArray'); }).get();
             var salidaCantidad   = $("input[name='salidaArray[]']")
                 .map(function () { return $(this).attr('data-cantidadSalida'); }).get();
             var nombreMaterial   = $("input[name='idmaterialArray[]']")
                 .map(function () { return $(this).attr('data-nombreMaterial'); }).get();
+            var unidadMedida     = $("input[name='idmaterialArray[]']")
+                .map(function () { return $(this).attr('data-unidadMedida'); }).get();
+            var observaciones    = $("input[name='observacionesArray[]']")
+                .map(function () { return $(this).val(); }).get();
 
-            var contenedorArray = [];
+            var contenedor = [];
             for (var p = 0; p < salidaCantidad.length; p++) {
-                contenedorArray.push({
+                var item = {
                     infoIdEntradaDeta: idEntradaDetalle[p],
                     infoCantidad:      salidaCantidad[p],
-                    nombreMaterial:    nombreMaterial[p],
-                });
+                    observacion:       observaciones[p] ?? '',
+                };
+                if (incluirNombre) {
+                    item.nombreMaterial = nombreMaterial[p];
+                    item.unidadMedida   = unidadMedida[p];
+                }
+                contenedor.push(item);
+            }
+            return contenedor;
+        }
+
+        // ── Generar PDF ───────────────────────────────────────────────
+        function generarPdfTalonario() {
+            colorBlancoTabla();
+
+            var campos = leerCampos();
+            if (!campos.fecha) { toastr.error('Fecha es requerida'); return; }
+            if ($('#matriz tbody tr').length === 0) {
+                toastr.error('Agregue al menos un material para generar el PDF');
+                return;
             }
 
-            // POST a nueva pestaña para que mPDF devuelva el PDF inline
+            var contenedorArray = construirContenedor(true);
+
             var form = document.createElement('form');
             form.method = 'POST';
             form.action = urlAdmin + '/admin/reporte/talonario/salida';
             form.target = '_blank';
 
-            var fields = {
+            var fields = Object.assign({
                 '_token':          document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'fecha':           fecha,
-                'descripcion':     descripcion,
-                'ficha_nombre':    fichaNombre,
-                'ficha_talonario': fichaTalonario,
                 'contenedorArray': JSON.stringify(contenedorArray),
-            };
+            }, campos);
 
             Object.keys(fields).forEach(function (key) {
                 var input   = document.createElement('input');
@@ -528,21 +631,14 @@
         }
 
         function guardarSalida() {
-            var fecha          = document.getElementById('fecha').value;
-            var descripcion    = document.getElementById('descripcion').value;
-            var fichaNombre    = document.getElementById('ficha_nombre').value;
-            var fichaTalonario = document.getElementById('ficha_talonario').value;
-
-            if (!fecha)  { toastr.error('Fecha es requerida');  return; }
-
+            var campos = leerCampos();
+            if (!campos.fecha) { toastr.error('Fecha es requerida'); return; }
             if ($('#matriz tbody tr').length === 0) {
                 toastr.error('Agregue al menos un material'); return;
             }
 
-            var reglaEntero      = /^[0-9]\d*$/;
-            var idEntradaDetalle = $("input[name='idmaterialArray[]']")
-                .map(function () { return $(this).attr('data-idmaterialArray'); }).get();
-            var salidaCantidad   = $("input[name='salidaArray[]']")
+            var reglaEntero    = /^[0-9]\d*$/;
+            var salidaCantidad = $("input[name='salidaArray[]']")
                 .map(function () { return $(this).attr('data-cantidadSalida'); }).get();
 
             for (var a = 0; a < salidaCantidad.length; a++) {
@@ -554,20 +650,13 @@
                 }
             }
 
-            var contenedorArray = [];
-            for (var p = 0; p < salidaCantidad.length; p++) {
-                contenedorArray.push({
-                    infoIdEntradaDeta: idEntradaDetalle[p],
-                    infoCantidad:      salidaCantidad[p],
-                });
-            }
+            var contenedorArray = construirContenedor(false);
 
             openLoading();
             var formData = new FormData();
-            formData.append('fecha',           fecha);
-            formData.append('descripcion',     descripcion);
-            formData.append('ficha_nombre',    fichaNombre);
-            formData.append('ficha_talonario', fichaTalonario);
+            Object.keys(campos).forEach(function (key) {
+                formData.append(key, campos[key]);
+            });
             formData.append('contenedorArray', JSON.stringify(contenedorArray));
 
             axios.post(urlAdmin + '/admin/salida/guardar', formData)

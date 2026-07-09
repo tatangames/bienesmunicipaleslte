@@ -402,6 +402,17 @@ return [
                     'route' => 'admin.objetoespecifico.index',
                 ],
 
+                [
+                    'text' => 'Proveedores',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.proveedor.index',
+                ],
+
+                [
+                    'text' => 'Ajuste de Firmas',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.jefefirma.index',
+                ],
             ],
         ],
 

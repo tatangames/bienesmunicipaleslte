@@ -19,6 +19,20 @@ return new class extends Migration
             // FICHA DE SALIDA
             $table->string('ficha_nombre', 100)->nullable();
             $table->string('ficha_talonario', 100)->nullable();
+            $table->string('numero_contrato', 100)->nullable();
+            $table->string('numero_orden', 100)->nullable();
+
+            $table->string('nombre_firma_1', 100)->nullable();
+            $table->string('nombre_firma_2', 100)->nullable();
+            $table->string('nombre_firma_3', 100)->nullable();
+
+            $table->string('autoriza_a', 200)->nullable();
+            $table->string('para_uso', 200)->nullable();
+            $table->string('peticion_a', 200)->nullable();
+
+
+            $table->text('encabezado')->nullable();
+            $table->text('pie_pagina')->nullable();
         });
     }
 
