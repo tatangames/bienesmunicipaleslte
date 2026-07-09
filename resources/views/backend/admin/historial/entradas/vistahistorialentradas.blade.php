@@ -59,6 +59,22 @@
                                 <label class="font-weight-bold">Fecha hasta</label>
                                 <input type="date" class="form-control" id="filtro-fecha-hasta">
                             </div>
+                            <div class="col-md-3">
+                                <label class="font-weight-bold">Factura</label>
+                                <input type="text" class="form-control" id="filtro-factura"
+                                       placeholder="Número de factura...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="font-weight-bold">Proveedor</label>
+                                <select class="form-control" id="filtro-proveedor">
+                                    <option value="">-- Todos --</option>
+                                    @foreach($proveedores as $prov)
+                                        <option value="{{ $prov->id }}">{{ $prov->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row align-items-end mt-3">
                             <div class="col-md-3 d-flex align-items-end">
                                 <div style="width:100%">
                                     <button class="btn btn-primary btn-block mb-1" onclick="recargar()">
@@ -109,18 +125,28 @@
                 <div class="modal-body">
                     <form id="formulario-editar">
                         <input type="hidden" id="id-editar">
+
                         <div class="form-group">
                             <label>Fecha <span class="text-danger">*</span></label>
                             <input type="date" id="fecha-editar" class="form-control">
                         </div>
-
+                        <div class="form-group">
+                            <label>Proveedor <span class="text-danger">*</span></label>
+                            <select id="proveedor-editar" class="form-control">
+                                <option value="">-- Seleccione --</option>
+                                @foreach($proveedores as $prov)
+                                    <option value="{{ $prov->id }}">{{ $prov->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label>Factura <small class="text-muted">(Opcional)</small></label>
                             <input type="text" id="factura-editar" class="form-control" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label>Descripción <small class="text-muted">(Opcional)</small></label>
-                            <textarea id="descripcion-editar" class="form-control" rows="3" maxlength="800"></textarea>
+                            <textarea id="descripcion-editar" class="form-control"
+                                      rows="3" maxlength="800"></textarea>
                         </div>
                     </form>
                 </div>
@@ -209,7 +235,7 @@
                         </div>
                         <div class="form-group">
                             <label>Detalle <small class="text-muted">(Opcional)</small></label>
-                            <input type="text" id="detalle-codigo-editar" class="form-control" maxlength="100">
+                            <input type="text" id="detalle-codigo-editar" autocomplete="off" class="form-control" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label>Precio unitario <span class="text-danger">*</span></label>
@@ -238,11 +264,11 @@
     <script>
         var _entradaIdActual     = null;
         var _entradaTituloActual = '';
+        var _tablaCargada        = false;
 
         $(function () {
             const ruta = "{{ url('/admin/historial/entradas/tabla') }}";
 
-            // ── DataTable ─────────────────────────────────────────
             function initDataTable() {
                 if ($.fn.DataTable.isDataTable('#tabla')) {
                     $('#tabla').DataTable().destroy();
@@ -280,30 +306,34 @@
                 $('#tabla_filter input').addClass('form-control form-control-sm').css('display', 'inline-block');
             }
 
-            // ── Cargar tabla ──────────────────────────────────────
             function cargarTabla() {
                 const fechaDesde = $('#filtro-fecha-desde').val();
                 const fechaHasta = $('#filtro-fecha-hasta').val();
+                const factura    = $('#filtro-factura').val().trim();
+                const proveedor  = $('#filtro-proveedor').val();
 
                 const params = new URLSearchParams();
                 if (fechaDesde) params.append('fecha_desde', fechaDesde);
                 if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+                if (factura)    params.append('factura',     factura);
+                if (proveedor)  params.append('proveedor',   proveedor);
 
                 const url = params.toString() ? ruta + '?' + params.toString() : ruta;
                 $('#tablaDatatable').load(url, function () { initDataTable(); });
             }
 
-            window.recargar = function () { cargarTabla(); };
+            window.recargar = function () {
+                _tablaCargada = true;
+                cargarTabla();
+            };
 
             window.limpiarFiltros = function () {
                 $('#filtro-fecha-desde').val('');
                 $('#filtro-fecha-hasta').val('');
-                cargarTabla();
+                $('#filtro-factura').val('');
+                $('#filtro-proveedor').val('');
+                if (_tablaCargada) cargarTabla();
             };
-
-            cargarTabla();
-
-
 
             // ── Delegación botones detalle ────────────────────────
             $(document).on('click', '.btn-editar-detalle', function () {
@@ -335,8 +365,9 @@
                         const e = response.data.entrada;
                         $('#id-editar').val(e.id);
                         $('#fecha-editar').val(e.fecha);
-                        $('#factura-editar').val(e.factura ?? '');
+                        $('#factura-editar').val(e.factura     ?? '');
                         $('#descripcion-editar').val(e.descripcion ?? '');
+                        $('#proveedor-editar').val(e.id_proveedor);
                         $('#modalEditar').modal('show');
                     } else {
                         toastr.error('No se pudo cargar la información');
@@ -348,17 +379,20 @@
         function editar() {
             const id          = $('#id-editar').val();
             const fecha       = $('#fecha-editar').val().trim();
+            const proveedor   = $('#proveedor-editar').val();
             const factura     = $('#factura-editar').val().trim();
             const descripcion = $('#descripcion-editar').val().trim();
 
-            if (!fecha)       { toastr.error('La fecha es requerida');        return; }
+            if (!fecha)     { toastr.error('La fecha es requerida');      return; }
+            if (!proveedor) { toastr.error('Seleccione un proveedor');    return; }
 
             openLoading();
             const formData = new FormData();
-            formData.append('id',             id);
-            formData.append('fecha',          fecha);
-            formData.append('factura',        factura);
-            formData.append('descripcion',    descripcion);
+            formData.append('id',           id);
+            formData.append('fecha',        fecha);
+            formData.append('id_proveedor', proveedor);
+            formData.append('factura',      factura);
+            formData.append('descripcion',  descripcion);
 
             axios.post(urlAdmin + '/admin/historial/entradas/editar', formData)
                 .then((response) => {

@@ -12,8 +12,7 @@ class Entradas extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'id_tipoentrada',
-        'id_tipocompra',
+        'id_proveedor',
         'fecha',
         'descripcion',
         'factura',
@@ -24,13 +23,10 @@ class Entradas extends Model
         return $this->hasMany(EntradasDetalle::class, 'id_entradas');
     }
 
-    public function tipoEntrada()
+
+    public function proveedor()
     {
-        return $this->belongsTo(TipoEntrada::class, 'id_tipoentrada');
+        return $this->belongsTo(Proveedor::class, 'id_proveedor');
     }
 
-    public function tipoCompra()
-    {
-        return $this->belongsTo(TipoCompra::class, 'id_tipocompra');
-    }
 }

@@ -69,6 +69,17 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
+                                            <label>Proveedor: <span class="text-danger">*</span></label>
+                                            <select id="select-proveedor" class="form-control" style="width:100%">
+                                                <option value="">-- Seleccionar proveedor --</option>
+                                                @foreach($arrayProveedor as $prov)
+                                                    <option value="{{ $prov->id }}">{{ $prov->nombre }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
                                             <label>Factura (Opcional):</label>
                                             <input type="text" class="form-control" autocomplete="off" maxlength="100" id="factura">
                                         </div>
@@ -220,6 +231,14 @@
         var seguroBuscador = true;
         var txtContenedorGlobal = null;
 
+        $('#select-proveedor').select2({
+            theme: 'bootstrap-5',
+            placeholder: '-- Seleccionar proveedor --',
+            allowClear: true,
+            dropdownParent: $('body'),   // evita el bug de zoom en AdminLTE
+            language: { noResults: function () { return 'No encontrado'; } }
+        });
+
         $(function () {
             // Fecha hoy
             var hoy = new Date();
@@ -364,7 +383,8 @@
             var fecha       = document.getElementById('fecha').value;
             var factura     = document.getElementById('factura').value;
             var descripcion = document.getElementById('descripcion').value;
-
+            var idProveedor = $('#select-proveedor').val();
+            if (!idProveedor) { toastr.error('Seleccione un proveedor'); return; }
 
             if (!fecha)       { toastr.error('Fecha es requerida'); return; }
 
@@ -386,6 +406,7 @@
                 var infoCantidad = $(this).find('input[name="cantidadArray[]"]').val();
                 var infoCodigo  = $(this).find('input[name="codigoArray[]"]').val();
                 var infoPrecio  = $(this).find('input[name="arrayPrecio[]"]').val();
+
 
                 if (!idMaterial || idMaterial == 0) {
                     colorRojoTabla(i);
@@ -412,7 +433,7 @@
             formData.append('fecha',           fecha);
             formData.append('factura',         factura);
             formData.append('descripcion',     descripcion);
-
+            formData.append('id_proveedor', idProveedor);
             formData.append('contenedorArray', JSON.stringify(contenedorArray));
 
             openLoading();
@@ -442,6 +463,7 @@
             document.getElementById('factura').value = '';
             $('#select-tipoentrada').val('').trigger('change');
             $('#select-tipocompra').val('').trigger('change');
+            $('#select-proveedor').val('').trigger('change');
             $('#matriz tbody tr').remove();
         }
     </script>

@@ -8,6 +8,7 @@ use App\Models\EntradasDetalle;
 use App\Models\Equipos;
 use App\Models\InformacionGeneral;
 use App\Models\Materiales;
+use App\Models\Proveedor;
 use App\Models\Reserva;
 use App\Models\Salidas;
 use App\Models\SalidasDetalle;
@@ -27,29 +28,40 @@ class HistorialController extends Controller
 
     public function indexHistorialEntradas()
     {
-        return view('backend.admin.historial.entradas.vistahistorialentradas');
+        $proveedores = Proveedor::orderBy('nombre')->get();
+        return view('backend.admin.historial.entradas.vistahistorialentradas', compact('proveedores'));
     }
 
     public function tablaHistorialEntradas(Request $request)
     {
-        $arrayEntradas = Entradas::with(['tipoEntrada', 'tipoCompra'])
-            ->when($request->fecha_desde, fn($q) => $q->whereDate('fecha', '>=', $request->fecha_desde)
+        $arrayEntradas = Entradas::with(['proveedor'])
+            ->when($request->fecha_desde, fn($q) =>
+            $q->whereDate('fecha', '>=', $request->fecha_desde)
             )
-            ->when($request->fecha_hasta, fn($q) => $q->whereDate('fecha', '<=', $request->fecha_hasta)
+            ->when($request->fecha_hasta, fn($q) =>
+            $q->whereDate('fecha', '<=', $request->fecha_hasta)
+            )
+            ->when($request->factura, fn($q) =>
+            $q->where('factura', 'LIKE', '%' . $request->factura . '%')
+            )
+            ->when($request->proveedor, fn($q) =>
+            $q->where('id_proveedor', $request->proveedor)
             )
             ->orderBy('fecha', 'desc')
             ->get()
             ->map(function ($item) {
-                $item->fecha_fmt = date('d/m/Y', strtotime($item->fecha));
+                $item->fecha_fmt       = date('d/m/Y', strtotime($item->fecha));
+                $item->proveedor_nombre = $item->proveedor->nombre ?? '';
                 return $item;
             });
 
-        return view('backend.admin.historial.entradas.tablahistorialentradas', compact('arrayEntradas'));
+        return view('backend.admin.historial.entradas.tablahistorialentradas',
+            compact('arrayEntradas'));
     }
 
     public function informacionEntrada(Request $request)
     {
-        $entrada = Entradas::find($request->id);
+        $entrada = Entradas::with('proveedor')->find($request->id);
 
         if (!$entrada) {
             return response()->json(['success' => 0]);
@@ -58,14 +70,14 @@ class HistorialController extends Controller
         return response()->json([
             'success' => 1,
             'entrada' => [
-                'id'            => $entrada->id,
-                'fecha'         => $entrada->fecha,
-                'factura'       => $entrada->factura,
-                'descripcion'   => $entrada->descripcion,
+                'id'           => $entrada->id,
+                'fecha'        => $entrada->fecha,
+                'factura'      => $entrada->factura,
+                'descripcion'  => $entrada->descripcion,
+                'id_proveedor' => $entrada->id_proveedor,
             ]
         ]);
     }
-
 
     public function editarEntrada(Request $request)
     {
@@ -75,14 +87,14 @@ class HistorialController extends Controller
             return response()->json(['success' => 0]);
         }
 
-        $entrada->fecha          = $request->fecha;
-        $entrada->factura        = $request->factura        ?: null;
-        $entrada->descripcion    = $request->descripcion    ?: null;
+        $entrada->fecha        = $request->fecha;
+        $entrada->factura      = $request->factura      ?: null;
+        $entrada->descripcion  = $request->descripcion  ?: null;
+        $entrada->id_proveedor = $request->id_proveedor ?: $entrada->id_proveedor;
         $entrada->save();
 
         return response()->json(['success' => 1]);
     }
-
 
 
     public function eliminarEntrada(Request $request)

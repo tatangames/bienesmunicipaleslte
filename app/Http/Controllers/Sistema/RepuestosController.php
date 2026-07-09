@@ -12,6 +12,7 @@ use App\Models\HistorialEntradas;
 use App\Models\HistorialEntradasDeta;
 use App\Models\Materiales;
 use App\Models\ObjetoEspecifico;
+use App\Models\Proveedor;
 use App\Models\SalidasDetalle;
 use App\Models\TipoCompra;
 use App\Models\TipoEntrada;
@@ -137,7 +138,9 @@ class RepuestosController extends Controller
 
     public function indexRegistroEntrada()
     {
-        return view('backend.admin.repuestos.registros.vistaentradaregistro');
+        $arrayProveedor = Proveedor::orderBy('nombre', 'ASC')->get();
+
+        return view('backend.admin.repuestos.registros.vistaentradaregistro', compact('arrayProveedor'));
     }
 
 
@@ -193,6 +196,7 @@ class RepuestosController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'fecha'        => 'required|date',
+            'id_proveedor' => 'required|integer|exists:proveedor,id',
         ]);
 
         if ($validator->fails()) {
@@ -210,6 +214,7 @@ class RepuestosController extends Controller
 
             // ── Cabecera ──
             $entrada = new Entradas();
+            $entrada->id_proveedor   = $request->id_proveedor;
             $entrada->fecha          = $request->fecha;
             $entrada->factura        = $request->factura;
             $entrada->descripcion    = $request->descripcion;

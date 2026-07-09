@@ -9,9 +9,10 @@
                             <tr>
                                 <th style="width:4%">ID</th>
                                 <th style="width:10%">Fecha</th>
-                                <th style="width:10%">Factura</th>
+                                <th style="width:12%">Factura</th>
+                                <th style="width:18%">Proveedor</th>
                                 <th style="width:22%">Descripción</th>
-                                <th style="width:16%">Opciones</th>
+                                <th style="width:18%">Opciones</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -20,6 +21,7 @@
                                     <td>{{ $dato->id }}</td>
                                     <td>{{ $dato->fecha_fmt }}</td>
                                     <td>{{ $dato->factura ?? '' }}</td>
+                                    <td>{{ $dato->proveedor_nombre }}</td>
                                     <td>{{ $dato->descripcion ?? '' }}</td>
                                     <td class="text-center">
                                         <button type="button"
