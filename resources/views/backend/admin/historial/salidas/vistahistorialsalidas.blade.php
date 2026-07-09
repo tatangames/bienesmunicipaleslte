@@ -303,7 +303,7 @@
 
     {{-- ══ Modal Editar Cantidad Detalle ══ --}}
     <div class="modal fade" id="modalEditarCantidad" tabindex="-1">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
                     <h5 class="modal-title text-white">
@@ -316,8 +316,8 @@
                 <div class="modal-body">
                     <input type="hidden" id="ec-id">
                     <div class="form-group">
-                        <label class="font-weight-bold" style="font-size:12px;">Material</label>
-                        <p id="ec-label-material" class="text-muted mb-0" style="font-size:13px;"></p>
+                        <label class="font-weight-bold" style="font-size:17px;">Material</label>
+                        <p id="ec-label-material"  style="font-size:17px;"></p>
                     </div>
                     <div class="form-group">
                         <label>Nueva cantidad <span class="text-danger">*</span></label>
