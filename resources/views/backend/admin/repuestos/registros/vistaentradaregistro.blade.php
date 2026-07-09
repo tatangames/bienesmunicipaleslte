@@ -53,7 +53,7 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-md-10">
+                    <div class="col-md-12">
                         <div class="card card-gray-dark">
                             <div class="card-header">
                                 <h3 class="card-title">Información de Ingreso</h3>
