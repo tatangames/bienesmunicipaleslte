@@ -958,7 +958,6 @@ class ReportesController extends Controller
 <br><br><br>";
 
         // ── Firmas ────────────────────────────────────────────────────
-        $firmaDerTexto = $firmaDerecha ?: '________________________________';
 
         $html .= "
             <table width='100%' style='margin-top:" . ($infoGeneral->px_firmas ?? 0) . "px; font-family:Arial, sans-serif; font-size:11px; border-collapse:collapse;'>
@@ -970,7 +969,7 @@ class ReportesController extends Controller
                 <tr>
                     <td style='text-align:center; font-size:12px; padding-top:6px;'>{$infoGeneral->nombre_firma_1}</td>
                     <td></td>
-                    <td style='text-align:center; font-size:12px; padding-top:6px;'>{$firmaDerTexto}</td>
+                    <td style='text-align:center; font-size:12px; padding-top:6px;'>{$firmaDerecha}</td>
                 </tr>
                 <tr>
                     <td style='text-align:center; font-size:12px; font-weight:bold;'>{$infoGeneral->nombre_firma_2}</td>
