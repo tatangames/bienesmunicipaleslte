@@ -768,12 +768,12 @@ class HistorialController extends Controller
         <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
     </tr>
     <tr>
-        <td style='text-align:center; font-size:12px; padding-top:6px;'>{$salida->nombre_firma_1}</td>
-        <td></td>
         <td style='text-align:center; font-size:12px; padding-top:6px;'>{$salida->nombre_firma_2}</td>
+        <td></td>
+        <td style='text-align:center; font-size:12px; padding-top:6px;'>{$salida->nombre_firma_3}</td>
     </tr>
     <tr>
-        <td style='text-align:center; font-size:12px; font-weight:bold;'>{$salida->nombre_firma_3}</td>
+        <td style='text-align:center; font-size:12px; font-weight:bold;'>{$salida->nombre_firma_1}</td>
         <td></td>
         <td></td>
     </tr>
