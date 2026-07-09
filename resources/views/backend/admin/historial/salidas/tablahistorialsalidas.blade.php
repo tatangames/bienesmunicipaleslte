@@ -7,12 +7,14 @@
                         <table id="tabla" class="table table-bordered table-striped">
                             <thead>
                             <tr>
-                                <th style="width:5%">ID</th>
-                                <th style="width:10%">Fecha</th>
-                                <th style="width:10%">Talonario</th>
-                                <th style="width:13%">Recibe</th>
-                                <th style="width:18%">Descripción</th>
-                                <th style="width:30%">Opciones</th>
+                                <th style="width:4%">ID</th>
+                                <th style="width:8%">Fecha</th>
+                                <th style="width:9%">Talonario</th>
+                                <th style="width:10%">N. Contrato</th>
+                                <th style="width:10%">N. Orden</th>
+                                <th style="width:12%">Recibe</th>
+                                <th style="width:15%">Descripción</th>
+                                <th style="width:32%">Opciones</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -21,7 +23,9 @@
                                     <td>{{ $dato->id }}</td>
                                     <td>{{ $dato->fecha_fmt }}</td>
                                     <td>{{ $dato->ficha_talonario ?? '' }}</td>
-                                    <td>{{ $dato->ficha_nombre ?? '' }}</td>
+                                    <td>{{ $dato->numero_contrato ?? '' }}</td>
+                                    <td>{{ $dato->numero_orden ?? '' }}</td>
+                                    <td>{{ $dato->nombre_firma_3 ?? '' }}</td>
                                     <td>{{ $dato->descripcion ?? '' }}</td>
                                     <td class="text-center">
                                         <button type="button"
@@ -35,6 +39,12 @@
                                                 style="margin:2px"
                                                 onclick="verDetalle({{ $dato->id }}, 'Salida #{{ $dato->id }} — {{ $dato->fecha_fmt }}')">
                                             <i class="fas fa-list"></i> Detalle
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-secondary btn-xs"
+                                                style="margin:2px"
+                                                onclick="window.open('{{ url('/admin/historial/salidas/pdf') }}/{{ $dato->id }}', '_blank')">
+                                            <i class="fas fa-file-pdf"></i> PDF
                                         </button>
                                         <button type="button"
                                                 class="btn btn-warning btn-xs"

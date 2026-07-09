@@ -1002,4 +1002,243 @@ class ReportesController extends Controller
 
 
 
+    public function pdfInventarioActual($idMaterial = 0)
+    {
+        $fechaHoy     = Carbon::now('America/El_Salvador')->format('d-m-Y');
+        $logoalcaldia = 'images/logo.png';
+
+        // ── Calcular stock: SUM(entradas) - SUM(salidas) por material+precio ──
+        $queryEntradas = \DB::table('entradas_detalle as ed')
+            ->join('materiales as m', 'm.id', '=', 'ed.id_material')
+            ->leftJoin('objeto_especifico as oe', 'oe.id', '=', 'm.id_objespecifico')
+            ->leftJoin('unidadmedida as um', 'um.id', '=', 'm.id_medida')
+            ->select(
+                'ed.id_material',
+                'ed.precio',
+                'm.nombre as nombre',
+                'm.codigo as codigo_mat',
+                'um.nombre as medida',
+                'oe.codigo as objespec',
+                \DB::raw('SUM(ed.cantidad_inicial) as total_entradas')
+            )
+            ->groupBy('ed.id_material', 'ed.precio', 'm.nombre', 'm.codigo', 'um.nombre', 'oe.codigo');
+
+        if ($idMaterial && $idMaterial != 0) {
+            $queryEntradas->where('ed.id_material', $idMaterial);
+        }
+
+        $entradas = $queryEntradas->get()->keyBy(function ($row) {
+            return $row->id_material . '|' . number_format((float)$row->precio, 4, '.', '');
+        });
+
+        $querySalidas = \DB::table('salidas_detalle as sd')
+            ->join('entradas_detalle as ed', 'ed.id', '=', 'sd.id_entrada_detalle')
+            ->select(
+                'ed.id_material',
+                'ed.precio',
+                \DB::raw('SUM(sd.cantidad_salida) as total_salidas')
+            )
+            ->groupBy('ed.id_material', 'ed.precio');
+
+        if ($idMaterial && $idMaterial != 0) {
+            $querySalidas->where('ed.id_material', $idMaterial);
+        }
+
+        $salidas = $querySalidas->get()->keyBy(function ($row) {
+            return $row->id_material . '|' . number_format((float)$row->precio, 4, '.', '');
+        });
+
+        // ── Construir array de stock ──────────────────────────────────────
+        $stock = [];
+        foreach ($entradas as $clave => $ent) {
+            $totalSalidas = isset($salidas[$clave]) ? (float)$salidas[$clave]->total_salidas : 0;
+            $disponible   = (float)$ent->total_entradas - $totalSalidas;
+
+            if ($disponible <= 0) continue; // solo cantidad > 0
+
+            $stock[] = [
+                'objespec'  => $ent->objespec  ?? '—',
+                'nombre'    => $ent->nombre    ?? '',
+                'medida'    => $ent->medida    ?? '',
+                'codigo'    => $ent->codigo_mat ?? '',
+                'precio'    => (float)$ent->precio,
+                'cantidad'  => $disponible,
+                'total'     => $disponible * (float)$ent->precio,
+            ];
+        }
+
+        // Ordenar por objeto específico → nombre
+        usort($stock, function ($a, $b) {
+            $cmp = strcmp($a['objespec'], $b['objespec']);
+            return $cmp !== 0 ? $cmp : strcmp($a['nombre'], $b['nombre']);
+        });
+
+        // ── Título dinámico ───────────────────────────────────────────────
+        $tituloMaterial = 'Todos los materiales';
+        if ($idMaterial && $idMaterial != 0) {
+            $mat = \App\Models\Materiales::find($idMaterial);
+            $tituloMaterial = $mat ? $mat->nombre : 'Material #' . $idMaterial;
+        }
+
+        // ── Encabezado ────────────────────────────────────────────────────
+        $encabezado = "
+<table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif;'>
+    <tr>
+        <td style='width:25%; border:0.8px solid #000; padding:6px 8px;'>
+            <table width='100%'><tr>
+                <td style='width:30%; text-align:left;'><img src='{$logoalcaldia}' style='height:38px'></td>
+                <td style='width:70%; text-align:left; color:#104e8c; font-size:13px; font-weight:bold; line-height:1.3;'>SANTA ANA NORTE<br>EL SALVADOR</td>
+            </tr></table>
+        </td>
+        <td style='width:50%; border-top:0.8px solid #000; border-bottom:0.8px solid #000; padding:6px 8px; text-align:center; font-size:15px; font-weight:bold;'>
+            INVENTARIO ACTUAL DE MATERIALES
+        </td>
+        <td style='width:25%; border:0.8px solid #000; padding:0; vertical-align:top;'>
+            <table width='100%' style='font-size:10px;'>
+                <tr>
+                    <td width='40%' style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Código:</strong></td>
+                    <td width='60%' style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'></td>
+                </tr>
+                <tr>
+                    <td style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Versión:</strong></td>
+                    <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'>000</td>
+                </tr>
+                <tr>
+                    <td style='border-right:0.8px solid #000; padding:4px 6px;'><strong>Fecha de vigencia:</strong></td>
+                    <td style='padding:4px 6px; text-align:center;'></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table><br>
+<table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:8px;'>
+    <tr>
+        <td style='width:15%; border:0.8px solid #ccc; padding:6px 8px; font-size:11px; font-weight:bold; background:#f5f5f5;'>MATERIAL</td>
+        <td style='width:50%; border:0.8px solid #ccc; padding:6px 8px; font-size:11px;'>$tituloMaterial</td>
+        <td style='width:15%; border:0.8px solid #ccc; padding:6px 8px; font-size:11px; font-weight:bold; background:#f5f5f5; text-align:center;'>FECHA</td>
+        <td style='width:20%; border:0.8px solid #ccc; padding:6px 8px; font-size:11px; text-align:center;'>$fechaHoy</td>
+    </tr>
+</table>";
+
+        // ── Tabla de datos ────────────────────────────────────────────────
+        $tabla = $encabezado . "
+<table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:8px; border:0.8px solid #D1D5DB;'>
+
+<thead>
+    <tr style='background:#4A5568;'>
+        <td style='font-weight:bold; width:11%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Obj. Espec.</td>
+        <td style='font-weight:bold; width:33%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Material</td>
+        <td style='font-weight:bold; width:12%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Medida</td>
+        <td style='font-weight:bold; width:10%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Disponible</td>
+        <td style='font-weight:bold; width:14%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Precio Unit.</td>
+        <td style='font-weight:bold; width:14%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Valor (\$)</td>
+    </tr>
+</thead>
+    <tbody>";
+
+        $granTotal         = 0;
+        $sumaTotalCantidad = 0;
+        $codigoActual      = null;
+        $subtotalCodigo    = 0;
+        $subtotalCantCod   = 0;
+
+        foreach ($stock as $info) {
+            // ── Subtotal al cambiar de objeto específico ──────────────────
+            if ($codigoActual !== null && $info['objespec'] !== $codigoActual) {
+                $cantFmt  = number_format($subtotalCantCod, 2);
+                $montoFmt = number_format($subtotalCodigo, 4);
+                $tabla .= "
+        <tr style='background:#dce8f5;'>
+            <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
+            <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>$cantFmt</td>
+            <td style='background:#dce8f5; border:0.8px solid #bbb;'></td>
+            <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>\$ $montoFmt</td>
+        </tr>";
+                $subtotalCodigo  = 0;
+                $subtotalCantCod = 0;
+            }
+
+            $codigoActual       = $info['objespec'];
+            $subtotalCodigo    += $info['total'];
+            $subtotalCantCod   += $info['cantidad'];
+            $granTotal         += $info['total'];
+            $sumaTotalCantidad += $info['cantidad'];
+
+            $precioFmt = number_format($info['precio'], 4);
+            $totalFmt  = number_format($info['total'], 4);
+            $cantFmt   = number_format($info['cantidad'], 2);
+
+            $tabla .= "
+        <tr>
+            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['objespec']}</td>
+            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['nombre']}</td>
+            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['medida']}</td>
+            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>$cantFmt</td>
+            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>\$ $precioFmt</td>
+            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>\$ $totalFmt</td>
+        </tr>";
+        }
+
+        // Último subtotal
+        if ($codigoActual !== null) {
+            $cantFmt  = number_format($subtotalCantCod, 2);
+            $montoFmt = number_format($subtotalCodigo, 4);
+            $tabla .= "
+        <tr style='background:#dce8f5;'>
+            <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
+            <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>$cantFmt</td>
+            <td style='background:#dce8f5; border:0.8px solid #bbb;'></td>
+            <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>\$ $montoFmt</td>
+        </tr>";
+        }
+
+        // Sin resultados
+        if (empty($stock)) {
+            $tabla .= "
+        <tr>
+            <td colspan='6' style='text-align:center; font-size:12px; padding:12px; color:#888;'>
+                No hay materiales con existencias disponibles.
+            </td>
+        </tr>";
+        }
+
+        $tabla .= "
+    </tbody>
+</table>";
+
+        // ── Gran total ────────────────────────────────────────────────────
+        $granTotalFmt         = number_format($granTotal, 4);
+        $sumaTotalCantidadFmt = number_format($sumaTotalCantidad, 2);
+
+        $tabla .= "
+<table width='100%' style='margin-top:10px; border-collapse:collapse;'>
+    <tr>
+        <td style='font-weight:bold; font-size:13px; text-align:right; border-top:2px solid #000; padding-top:6px;'>TOTAL UNIDADES:&nbsp;&nbsp;</td>
+        <td style='font-weight:bold; font-size:13px; width:12%; border-top:2px solid #000; padding-top:6px;'>$sumaTotalCantidadFmt</td>
+        <td style='font-weight:bold; font-size:13px; text-align:right; border-top:2px solid #000; padding-top:6px;'>VALOR TOTAL:&nbsp;&nbsp;</td>
+        <td style='font-weight:bold; font-size:13px; width:18%; border-top:2px solid #000; padding-top:6px;'>\$ $granTotalFmt</td>
+    </tr>
+</table>";
+
+        $mpdf = new \Mpdf\Mpdf([
+            'tempDir'       => sys_get_temp_dir(),
+            'format'        => 'LETTER',
+            'margin_top'    => 15,
+            'margin_bottom' => 15,
+            'margin_left'   => 15,
+            'margin_right'  => 15,
+        ]);
+        $mpdf->SetTitle('Inventario Actual de Materiales');
+        $mpdf->showImageErrors = false;
+        $stylesheet = file_get_contents('css/cssregistro.css');
+        $mpdf->WriteHTML($stylesheet, 1);
+        $mpdf->setFooter('Página: {PAGENO}/{nb}');
+        $mpdf->WriteHTML($tabla, 2);
+        $mpdf->Output('inventario_' . date('Ymd_His') . '.pdf', 'I');
+    }
+
+
+
+
+
 }

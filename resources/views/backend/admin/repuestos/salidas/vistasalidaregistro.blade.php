@@ -102,13 +102,7 @@
                                                    maxlength="100" id="ficha_talonario" placeholder="Ej: 001">
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Nombre Ficha: <small class="text-muted">(Opcional)</small></label>
-                                            <input type="text" class="form-control" autocomplete="off"
-                                                   maxlength="100" id="ficha_nombre" placeholder="Nombre...">
-                                        </div>
-                                    </div>
+
                                 </div>
 
                                 {{-- Fila 2: Número Contrato · Número Orden --}}
@@ -538,7 +532,6 @@
             return {
                 fecha:            document.getElementById('fecha').value,
                 descripcion:      document.getElementById('descripcion').value,
-                ficha_nombre:     document.getElementById('ficha_nombre').value,
                 ficha_talonario:  document.getElementById('ficha_talonario').value,
                 numero_contrato:  document.getElementById('numero_contrato').value,
                 numero_orden:     document.getElementById('numero_orden').value,

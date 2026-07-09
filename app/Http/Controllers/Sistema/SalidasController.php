@@ -202,18 +202,23 @@ class SalidasController extends Controller
                 $fila++;
             }
 
+            $infoGeneral = InformacionGeneral::where('id', 1)->first();
+
             // Guardar cabecera
             $salida                  = new Salidas();
             $salida->fecha           = $request->fecha;
             $salida->descripcion     = $request->descripcion;
-            $salida->ficha_nombre    = $request->ficha_nombre;
             $salida->ficha_talonario = $request->ficha_talonario;
             $salida->numero_contrato = $request->numero_contrato;
             $salida->numero_orden    = $request->numero_orden;
             $salida->autoriza_a      = $request->autoriza_entrega;
             $salida->peticion_a      = $request->peticion_de;
             $salida->para_uso        = $request->para_uso_en;
-            $salida->nombre_firma_1  = $request->firma_derecha;
+            $salida->nombre_firma_1  = $infoGeneral->nombre_firma_1;
+            $salida->nombre_firma_2  = $infoGeneral->nombre_firma_2;
+            $salida->nombre_firma_3  = $request->firma_derecha;
+            $salida->encabezado = $infoGeneral->encabezado;
+            $salida->pie_pagina = $infoGeneral->pie_pagina;
             $salida->save();
 
             // Guardar detalle

@@ -64,6 +64,13 @@
                                value="{{ $infoGeneral->encabezado }}" autocomplete="off">
                     </div>
 
+
+                    <div class="form-group">
+                        <label>Distancia Firmas</label>
+                        <input type="number" class="form-control" id="px_firmas"
+                               value="{{ $infoGeneral->px_firmas }}" autocomplete="off">
+                    </div>
+
                 </div>
                 <div class="card-footer">
                     <button class="btn btn-primary" onclick="guardar()">
@@ -82,11 +89,21 @@
 
     <script>
         function guardar() {
+
+            const pxFirmas = document.getElementById('px_firmas').value.trim();
+
+            if (pxFirmas === '') {
+                toastr.error('PX Firmas es requerido');
+                document.getElementById('px_firmas').focus();
+                return;
+            }
+
             openLoading();
 
             var formData = new FormData();
             formData.append('nombre1', document.getElementById('nombre1').value);
             formData.append('nombre2', document.getElementById('nombre2').value);
+            formData.append('px_firmas', document.getElementById('px_firmas').value);
 
             axios.post(urlAdmin + '/admin/jefefirma/actualizar', formData)
                 .then((response) => {

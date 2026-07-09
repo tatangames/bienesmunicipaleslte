@@ -95,13 +95,10 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/admin/inventario/editar', [RepuestosController::class, 'editarMaterial']);
     Route::post('/admin/inventario/catalogo', [RepuestosController::class, 'inventarioConteoDeMateriales']);
 
-
-
     // --- REGISTRAR ENTRADA ---
     Route::get('/admin/registro/entrada', [RepuestosController::class,'indexRegistroEntrada'])->name('admin.entrada.registro.index');
     Route::post('/admin/buscar/material',  [RepuestosController::class,'buscadorMaterial']);
     Route::post('/admin/entradas/guardar',  [RepuestosController::class,'guardarEntrada']);
-
 
     // --- REGISTRAR SALIDA ---
     Route::get('/admin/registro/salida', [SalidasController::class,'indexRegistroSalida'])->name('admin.salida.registro.index');
@@ -133,12 +130,17 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/historial/salidas/extras/{id}',      [HistorialController::class, 'vistaExtrasSalida'])->name('admin.historial.salidas.extras');
     Route::post('/admin/historial/salidas/extras/guardar',  [HistorialController::class, 'guardarExtrasSalida']);
     Route::post('/admin/historial/salidas/detalle/eliminar', [HistorialController::class, 'eliminarDetalleSalida']);
+    Route::get('/admin/historial/salidas/pdf/{id}',      [HistorialController::class, 'generarPDFSalidaGuardado']);
+    Route::post('/admin/historial/buscarmaterial/nombre',  [HistorialController::class,'buscadorMaterialGetNombre']);
+    Route::post('/admin/historial/salidas/editarcantidad',      [HistorialController::class, 'editarCantidadSalida']);
+
+
+
 
     // --- REPORTE / ENTRADA POR PROYECTO
     Route::get('/admin/reporte/inventario/quehaentrado', [ReportesController::class,'vistaQueHaEntrado'])->name('admin.reporte.inventario.entrada.index');
     Route::get('/admin/reporte/quehaentrado/pdf/{desde}/{hasta}/{tipo}', [ReportesController::class, 'pdfQueHaEntradoProyectos']);
     Route::get('/admin/reporte/quehasalido/pdf/{desde}/{hasta}/{tipo}', [ReportesController::class, 'pdfQueHaSalidoProyectos']);
-    Route::get('admin/reporte/inventario/pdf/{idMaterial}', [ReportesController::class, 'pdfInventarioActual'])->name('admin.reporte.inventario.pdf');
 
     // --- ACTUALIZAR DISTANCIA FIRMAS ---
     Route::post('/admin/informacion/actualizar/px', [ReportesController::class, 'actualizarPxInformacionGeneral'])
@@ -148,6 +150,7 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/jefefirma/index', [ConfiguracionController::class,'vistaJefeFirmas'])->name('admin.jefefirma.index');
     Route::post('/admin/jefefirma/actualizar',  [ConfiguracionController::class,'actualizarJefeFirmas']);
 
+    Route::get('admin/reporte/inventario/pdf/{idMaterial}', [ReportesController::class, 'pdfInventarioActual'])->name('admin.reporte.inventario.pdf');
 
 
 

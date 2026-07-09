@@ -406,6 +406,7 @@ class ConfiguracionController extends Controller
         InformacionGeneral::where('id', 1)->update([
             'nombre_firma_1' => $request->nombre1,
             'nombre_firma_2' => $request->nombre2,
+            'px_firmas' => $request->px_firmas,
         ]);
 
         return ['success' => 1];
