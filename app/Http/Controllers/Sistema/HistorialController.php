@@ -607,15 +607,15 @@ class HistorialController extends Controller
 
     public function generarPDFSalidaGuardado($id)
     {
-        $salida = Salidas::with(['detalle.entradaDetalle.material.unidadMedida']) ->findOrFail($id);
+        $salida = Salidas::with(['detalle.entradaDetalle.material.unidadMedida'])->findOrFail($id);
 
         $infoGeneral = InformacionGeneral::where('id', 1)->first();
 
         $fechaFmt        = $salida->fecha ? date('d/m/Y', strtotime($salida->fecha)) : '';
         $logoalcaldia    = 'images/logo.png';
-        $autorizaEntrega = htmlspecialchars($salida->autoriza_a   ?? '');
-        $peticionDe      = htmlspecialchars($salida->peticion_a   ?? '');
-        $paraUsoEn       = htmlspecialchars($salida->para_uso     ?? '');
+        $autorizaEntrega = htmlspecialchars($salida->autoriza_a    ?? '');
+        $peticionDe      = htmlspecialchars($salida->peticion_a    ?? '');
+        $paraUsoEn       = htmlspecialchars($salida->para_uso      ?? '');
         $firmaDerecha    = htmlspecialchars($salida->nombre_firma_1 ?? '');
 
         // ── Encabezado ────────────────────────────────────────────────
@@ -706,11 +706,11 @@ class HistorialController extends Controller
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; font-size:11px;'>
     <thead>
         <tr>
-            <th style='width:5%;  border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8;'>N°</th>
-            <th style='width:42%; border:0.8px solid #000; padding:5px 8px; text-align:center; background:#e8e8e8;'>DESCRIPCION</th>
-            <th style='width:16%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8;'>UNIDAD DE MEDIDA</th>
-            <th style='width:10%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8;'>CANTIDAD</th>
-            <th style='width:27%; border:0.8px solid #000; padding:5px 8px; text-align:center; background:#e8e8e8;'>OBSERVACIONES</th>
+            <th style='width:5%;  border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size:12px'>N°</th>
+            <th style='width:42%; border:0.8px solid #000; padding:5px 8px; text-align:center; background:#e8e8e8; font-size:12px'>DESCRIPCION</th>
+            <th style='width:16%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size:12px'>UNIDAD DE MEDIDA</th>
+            <th style='width:10%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size:12px'>CANTIDAD</th>
+            <th style='width:27%; border:0.8px solid #000; padding:5px 8px; text-align:center; background:#e8e8e8; font-size:12px'>OBSERVACIONES</th>
         </tr>
     </thead>
     <tbody>";
@@ -730,16 +730,13 @@ class HistorialController extends Controller
             }
 
             $html .= "
-    <tr>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle;'>{$num}</td>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px; text-align:left; vertical-align:middle; font-size:10px;'>{$nombreMat}</td>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size:10px;'>{$unidadMed}</td>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle;'>{$cantidad}</td>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px 8px; vertical-align:middle; text-align:left;'>{$observacion}</td>
-    </tr>
-    <tr>
-        <td style='border-bottom:0.8px solid #000; border-left:0.8px solid #000; border-right:0.8px solid #000; padding:2px 8px; font-size:10px; color:#333;'>&nbsp;</td>
-    </tr>";
+        <tr>
+            <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size:13px'>{$num}</td>
+            <td style='border:0.8px solid #000; padding:4px; text-align:left; vertical-align:middle; font-size:13px;'>{$nombreMat}</td>
+            <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size:13px;'>{$unidadMed}</td>
+            <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size:13px'>{$cantidad}</td>
+            <td style='border:0.8px solid #000; padding:4px 8px; vertical-align:middle; text-align:left; font-size:13px'>{$observacion}</td>
+        </tr>";
         }
 
         $html .= "
@@ -771,12 +768,12 @@ class HistorialController extends Controller
         <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
     </tr>
     <tr>
-        <td style='text-align:center; font-size:12px; padding-top:6px;'>{$infoGeneral->nombre_firma_1}</td>
+        <td style='text-align:center; font-size:12px; padding-top:6px;'>{$salida->nombre_firma_1}</td>
         <td></td>
-        <td style='text-align:center; font-size:12px; padding-top:6px;'>{$firmaDerTexto}</td>
+        <td style='text-align:center; font-size:12px; padding-top:6px;'>{$salida->nombre_firma_2}</td>
     </tr>
     <tr>
-        <td style='text-align:center; font-size:12px; font-weight:bold;'>{$infoGeneral->nombre_firma_2}</td>
+        <td style='text-align:center; font-size:12px; font-weight:bold;'>{$salida->nombre_firma_3}</td>
         <td></td>
         <td></td>
     </tr>
