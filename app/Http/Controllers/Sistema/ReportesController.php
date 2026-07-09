@@ -933,10 +933,7 @@ class ReportesController extends Controller
                 <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size:13px;'>{$unidadMed}</td>
                 <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size: 13px'>{$cantidad}</td>
                 <td style='border:0.8px solid #000; padding:4px 8px; vertical-align:middle; text-align:left; font-size: 13px'>{$observacion}</td>
-            </tr>
-    <tr>
-        <td style='border-bottom:0.8px solid #000; border-left:0.8px solid #000; border-right:0.8px solid #000; padding:2px 8px; font-size:13px; color:#333; text-align:left;'>&nbsp;</td>
-    </tr>";
+            </tr>";
         }
 
         $html .= "
