@@ -927,13 +927,13 @@ class ReportesController extends Controller
             // Fila 2: celdas vacías + valor U/M + celdas vacías
             // (igual al diseño de la imagen donde la U/M aparece en sub-fila)
             $html .= "
-    <tr>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size: 13px'>{$num}</td>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px; text-align:left; vertical-align:middle; font-size:13px;'>{$nombreMat}</td>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size:13px;'>{$unidadMed}</td>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size: 13px'>{$cantidad}</td>
-        <td rowspan='2' style='border:0.8px solid #000; padding:4px 8px; vertical-align:middle; text-align:left; font-size: 13px'>{$observacion}</td>
-    </tr>
+            <tr>
+                <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size: 13px'>{$num}</td>
+                <td style='border:0.8px solid #000; padding:4px; text-align:left; vertical-align:middle; font-size:13px;'>{$nombreMat}</td>
+                <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size:13px;'>{$unidadMed}</td>
+                <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size: 13px'>{$cantidad}</td>
+                <td style='border:0.8px solid #000; padding:4px 8px; vertical-align:middle; text-align:left; font-size: 13px'>{$observacion}</td>
+            </tr>
     <tr>
         <td style='border-bottom:0.8px solid #000; border-left:0.8px solid #000; border-right:0.8px solid #000; padding:2px 8px; font-size:13px; color:#333; text-align:left;'>&nbsp;</td>
     </tr>";
