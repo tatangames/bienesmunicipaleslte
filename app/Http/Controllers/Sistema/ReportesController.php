@@ -827,15 +827,15 @@ class ReportesController extends Controller
             <table width='100%' style='font-size:10px;'>
                 <tr>
                     <td width='40%' style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Código:</strong></td>
-                    <td width='60%' style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'>MANB-002-FORM</td>
+                    <td width='60%' style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center; font-size: 12px'>MANB-002-FORM</td>
                 </tr>
                 <tr>
                     <td style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Versión:</strong></td>
-                    <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'>000</td>
+                    <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center; font-size: 12px'>000</td>
                 </tr>
                 <tr>
                     <td style='border-right:0.8px solid #000; padding:4px 6px;'><strong>Fecha de vigencia:</strong></td>
-                    <td style='padding:4px 6px; text-align:center;'>22/10/2025</td>
+                    <td style='padding:4px 6px; text-align:center; font-size: 12px'>22/10/2025</td>
                 </tr>
             </table>
         </td>
