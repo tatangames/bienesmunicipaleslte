@@ -1006,12 +1006,10 @@ class ReportesController extends Controller
 
 
 
-
-
     public function pdfInventarioActual($idMaterial = 0, $conteo = 0)
     {
-        $conteo       = ((int) $conteo) === 1;
-        $fechaHoy     = Carbon::now('America/El_Salvador')->format('d-m-Y');
+        $conteo = ((int)$conteo) === 1;
+        $fechaHoy = Carbon::now('America/El_Salvador')->format('d-m-Y');
         $logoalcaldia = 'images/logo.png';
 
         // ── Calcular stock: SUM(entradas) - SUM(salidas) por material+precio ──
@@ -1059,18 +1057,18 @@ class ReportesController extends Controller
         $stock = [];
         foreach ($entradas as $clave => $ent) {
             $totalSalidas = isset($salidas[$clave]) ? (float)$salidas[$clave]->total_salidas : 0;
-            $disponible   = (float)$ent->total_entradas - $totalSalidas;
+            $disponible = (float)$ent->total_entradas - $totalSalidas;
 
             if ($disponible <= 0) continue; // solo cantidad > 0
 
             $stock[] = [
-                'objespec'  => $ent->objespec  ?? '—',
-                'nombre'    => $ent->nombre    ?? '',
-                'medida'    => $ent->medida    ?? '',
-                'codigo'    => $ent->codigo_mat ?? '',
-                'precio'    => (float)$ent->precio,
-                'cantidad'  => $disponible,
-                'total'     => $disponible * (float)$ent->precio,
+                'objespec' => $ent->objespec ?? '—',
+                'nombre' => $ent->nombre ?? '',
+                'medida' => $ent->medida ?? '',
+                'codigo' => $ent->codigo_mat ?? '',
+                'precio' => (float)$ent->precio,
+                'cantidad' => $disponible,
+                'total' => $disponible * (float)$ent->precio,
             ];
         }
 
@@ -1128,18 +1126,18 @@ class ReportesController extends Controller
 </table>";
 
         // ── Anchos de columna y padding, según si se incluye conteo físico ──
-        $colObjEspec    = $conteo ? '9%'  : '11%';
-        $colMaterial    = $conteo ? '23%' : '33%';
-        $colMedida      = $conteo ? '9%'  : '12%';
-        $colDisponible  = $conteo ? '9%'  : '10%';
-        $colPrecio      = $conteo ? '12%' : '14%';
-        $colValor       = $conteo ? '12%' : '14%';
-        $colConteo      = '13%';
-        $colDiferencia  = '13%';
+        $colObjEspec = $conteo ? '9%' : '11%';
+        $colMaterial = $conteo ? '23%' : '33%';
+        $colMedida = $conteo ? '9%' : '12%';
+        $colDisponible = $conteo ? '9%' : '10%';
+        $colPrecio = $conteo ? '12%' : '14%';
+        $colValor = $conteo ? '12%' : '14%';
+        $colConteo = '13%';
+        $colDiferencia = '13%';
 
-        $paddingHeader = $conteo ? '9px 6px'  : '5px 6px';
-        $paddingFila   = $conteo ? '10px 6px' : '4px 6px';
-        $paddingSub    = $conteo ? '8px 6px'  : '4px 6px';
+        $paddingHeader = $conteo ? '9px 6px' : '5px 6px';
+        $paddingFila = $conteo ? '10px 6px' : '4px 6px';
+        $paddingSub = $conteo ? '8px 6px' : '4px 6px';
 
         $columnasExtraHeader = '';
         if ($conteo) {
@@ -1165,20 +1163,22 @@ class ReportesController extends Controller
 </thead>
     <tbody>";
 
-        $granTotal         = 0;
-        $sumaTotalCantidad = 0;
-        $codigoActual      = null;
-        $subtotalCodigo    = 0;
-        $subtotalCantCod   = 0;
-        $colspanExtra      = $conteo ? "<td colspan='2' style='background:#dce8f5; border:0.8px solid #bbb;'></td>" : '';
+        $granTotal = 0;
+        $codigoActual = null;
+        $subtotalCodigo = 0;
+        $subtotalCantCod = 0;
+        $colspanExtra = $conteo ? "<td colspan='2' style='background:#dce8f5; border:0.8px solid #bbb;'></td>" : '';
 
-        // ── NUEVO: seguimiento del "grupo" de material repetido (solo aplica cuando $conteo = true) ──
-        $materialClaveActual    = null;
-        $materialNombreActual   = '';
+        // ── Acumulador para el cuadro resumen final por obj. específico ──
+        $resumenObjespec = [];
+
+        // ── Seguimiento del "grupo" de material repetido (solo aplica cuando $conteo = true) ──
+        $materialClaveActual = null;
+        $materialNombreActual = '';
         $materialObjespecActual = '';
-        $filasMaterialActual    = 0;
-        $sumCantidadMaterial    = 0;
-        $sumValorMaterial       = 0;
+        $filasMaterialActual = 0;
+        $sumCantidadMaterial = 0;
+        $sumValorMaterial = 0;
 
         // Imprime el subtotal del material agrupado (solo si tuvo más de 1 fila)
         $imprimirSubtotalMaterial = function () use (
@@ -1194,7 +1194,7 @@ class ReportesController extends Controller
                 return;
             }
 
-            $cantFmt  = number_format($sumCantidadMaterial, 2);
+            $cantFmt = number_format($sumCantidadMaterial, 2);
             $montoFmt = number_format($sumValorMaterial, 4);
 
             $tabla .= "
@@ -1210,11 +1210,11 @@ class ReportesController extends Controller
 
         foreach ($stock as $info) {
 
-            // ── NUEVO: detectar si esta fila repite el material anterior (objespec+nombre+medida) ──
+            // ── Detectar si esta fila repite el material anterior (objespec+nombre+medida) ──
             $esRepetido = false;
             if ($conteo) {
                 $claveMaterial = $info['objespec'] . '|' . $info['nombre'] . '|' . $info['medida'];
-                $esRepetido    = ($materialClaveActual === $claveMaterial);
+                $esRepetido = ($materialClaveActual === $claveMaterial);
 
                 // Si cambiamos de material, cerrar el subtotal del material anterior (si aplica)
                 if (!$esRepetido && $materialClaveActual !== null) {
@@ -1222,9 +1222,9 @@ class ReportesController extends Controller
                 }
             }
 
-            // ── Subtotal al cambiar de objeto específico (igual que antes) ──
+            // ── Subtotal al cambiar de objeto específico ──
             if ($codigoActual !== null && $info['objespec'] !== $codigoActual) {
-                $cantFmt  = number_format($subtotalCantCod, 2);
+                $cantFmt = number_format($subtotalCantCod, 2);
                 $montoFmt = number_format($subtotalCodigo, 4);
                 $tabla .= "
         <tr style='background:#dce8f5;'>
@@ -1234,43 +1234,50 @@ class ReportesController extends Controller
             <td style='font-weight:bold; font-size:11px; padding:{$paddingSub}; border:0.8px solid #bbb;'>\$ $montoFmt</td>
             {$colspanExtra}
         </tr>";
-                $subtotalCodigo  = 0;
+
+                // ── Guardar este subtotal para el cuadro resumen final ──
+                $resumenObjespec[] = [
+                    'objespec' => $codigoActual,
+                    'cantidad' => $subtotalCantCod,
+                    'total' => $subtotalCodigo,
+                ];
+
+                $subtotalCodigo = 0;
                 $subtotalCantCod = 0;
             }
 
-            $codigoActual       = $info['objespec'];
-            $subtotalCodigo    += $info['total'];
-            $subtotalCantCod   += $info['cantidad'];
-            $granTotal         += $info['total'];
-            $sumaTotalCantidad += $info['cantidad'];
+            $codigoActual = $info['objespec'];
+            $subtotalCodigo += $info['total'];
+            $subtotalCantCod += $info['cantidad'];
+            $granTotal += $info['total'];
 
-            // ── NUEVO: acumular datos del grupo de material actual ──
+            // ── Acumular datos del grupo de material actual ──
             if ($conteo) {
                 if (!$esRepetido) {
-                    $materialClaveActual    = $claveMaterial;
-                    $materialNombreActual   = $info['nombre'];
+                    $materialClaveActual = $claveMaterial;
+                    $materialNombreActual = $info['nombre'];
                     $materialObjespecActual = $info['objespec'];
-                    $filasMaterialActual    = 0;
-                    $sumCantidadMaterial    = 0;
-                    $sumValorMaterial       = 0;
+                    $filasMaterialActual = 0;
+                    $sumCantidadMaterial = 0;
+                    $sumValorMaterial = 0;
                 }
                 $filasMaterialActual++;
                 $sumCantidadMaterial += $info['cantidad'];
-                $sumValorMaterial    += $info['total'];
+                $sumValorMaterial += $info['total'];
             }
 
             $precioFmt = number_format($info['precio'], 4);
-            $totalFmt  = number_format($info['total'], 4);
-            $cantFmt   = number_format($info['cantidad'], 2);
+            $totalFmt = number_format($info['total'], 4);
+            $cantFmt = number_format($info['cantidad'], 2);
 
             $celdasExtra = $conteo ? "
             <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>&nbsp;</td>
             <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>&nbsp;</td>" : '';
 
-            // ── NUEVO: si la fila es repetición del material anterior, dejar en blanco Obj. Espec., Material y Medida ──
+            // ── Si la fila es repetición del material anterior, dejar en blanco Obj. Espec., Material y Medida ──
             $objespecCell = $esRepetido ? '&nbsp;' : $info['objespec'];
-            $nombreCell   = $esRepetido ? '&nbsp;' : $info['nombre'];
-            $medidaCell   = $esRepetido ? '&nbsp;' : $info['medida'];
+            $nombreCell = $esRepetido ? '&nbsp;' : $info['nombre'];
+            $medidaCell = $esRepetido ? '&nbsp;' : $info['medida'];
 
             $tabla .= "
         <tr>
@@ -1284,14 +1291,14 @@ class ReportesController extends Controller
         </tr>";
         }
 
-        // ── NUEVO: cerrar el subtotal del último grupo de material (si aplica) ──
+        // ── Cerrar el subtotal del último grupo de material (si aplica) ──
         if ($conteo) {
             $imprimirSubtotalMaterial();
         }
 
         // Último subtotal por objeto específico
         if ($codigoActual !== null) {
-            $cantFmt  = number_format($subtotalCantCod, 2);
+            $cantFmt = number_format($subtotalCantCod, 2);
             $montoFmt = number_format($subtotalCodigo, 4);
             $tabla .= "
         <tr style='background:#dce8f5;'>
@@ -1301,6 +1308,13 @@ class ReportesController extends Controller
             <td style='font-weight:bold; font-size:11px; padding:{$paddingSub}; border:0.8px solid #bbb;'>\$ $montoFmt</td>
             {$colspanExtra}
         </tr>";
+
+            // ── Guardar el último subtotal para el cuadro resumen final ──
+            $resumenObjespec[] = [
+                'objespec' => $codigoActual,
+                'cantidad' => $subtotalCantCod,
+                'total' => $subtotalCodigo,
+            ];
         }
 
         // Sin resultados
@@ -1318,27 +1332,50 @@ class ReportesController extends Controller
     </tbody>
 </table>";
 
-        // ── Gran total ────────────────────────────────────────────────────
-        $granTotalFmt         = number_format($granTotal, 4);
-        $sumaTotalCantidadFmt = number_format($sumaTotalCantidad, 2);
+        // ── Cuadro resumen final por Obj. Específico ─────────────────
+        if (!empty($resumenObjespec)) {
+            $tabla .= "
+<table width='60%' style='margin-top:16px; border-collapse:collapse; font-family:Arial, sans-serif; border:0.8px solid #D1D5DB;'>
+    <thead>
+        <tr style='background:#4A5568;'>
+            <td style='font-weight:bold; font-size:11px; color:#fff; padding:6px 8px; border:0.8px solid #2D3748;'>Obj. Específico</td>
+            <td style='font-weight:bold; font-size:11px; color:#fff; padding:6px 8px; border:0.8px solid #2D3748; text-align:right;'>Total (\$)</td>
+        </tr>
+    </thead>
+    <tbody>";
+
+            foreach ($resumenObjespec as $r) {
+                $totalResFmt = number_format($r['total'], 4);
+                $tabla .= "
+        <tr>
+            <td style='font-size:11px; padding:5px 8px; border:0.8px solid #ccc;'>{$r['objespec']}</td>
+            <td style='font-size:11px; padding:5px 8px; border:0.8px solid #ccc; text-align:right;'>\$ $totalResFmt</td>
+        </tr>";
+            }
+
+            $tabla .= "
+    </tbody>
+</table>";
+        }
+
+        // ── Total general (ya sin la sumatoria de unidades disponibles) ─────
+        $granTotalFmt = number_format($granTotal, 4);
 
         $tabla .= "
 <table width='100%' style='margin-top:10px; border-collapse:collapse;'>
     <tr>
-        <td style='font-weight:bold; font-size:13px; text-align:right; border-top:2px solid #000; padding-top:6px;'>TOTAL UNIDADES:&nbsp;&nbsp;</td>
-        <td style='font-weight:bold; font-size:13px; width:12%; border-top:2px solid #000; padding-top:6px;'>$sumaTotalCantidadFmt</td>
         <td style='font-weight:bold; font-size:13px; text-align:right; border-top:2px solid #000; padding-top:6px;'>VALOR TOTAL:&nbsp;&nbsp;</td>
         <td style='font-weight:bold; font-size:13px; width:18%; border-top:2px solid #000; padding-top:6px;'>\$ $granTotalFmt</td>
     </tr>
 </table>";
 
         $mpdf = new \Mpdf\Mpdf([
-            'tempDir'       => sys_get_temp_dir(),
-            'format'        => 'LETTER',
-            'margin_top'    => 15,
+            'tempDir' => sys_get_temp_dir(),
+            'format' => 'LETTER',
+            'margin_top' => 15,
             'margin_bottom' => 15,
-            'margin_left'   => 15,
-            'margin_right'  => 15,
+            'margin_left' => 15,
+            'margin_right' => 15,
         ]);
         $mpdf->SetTitle('Inventario Actual de Materiales');
         $mpdf->showImageErrors = false;
@@ -1348,6 +1385,10 @@ class ReportesController extends Controller
         $mpdf->WriteHTML($tabla, 2);
         $mpdf->Output('inventario_' . date('Ymd_His') . '.pdf', 'I');
     }
+
+
+
+
 
 
     public function reportePDFInicialPorPeriodos($desde, $hasta)
