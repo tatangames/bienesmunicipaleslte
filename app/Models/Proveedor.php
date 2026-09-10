@@ -11,4 +11,9 @@ class Proveedor extends Model
 
     protected $table = 'proveedor';
     public $timestamps = false;
+    protected $fillable = ['nombre'];
+    public function entradas()
+    {
+        return $this->hasMany(Entradas::class, 'id_proveedor');
+    }
 }

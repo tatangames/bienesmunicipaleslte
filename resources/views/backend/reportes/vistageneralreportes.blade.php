@@ -241,11 +241,22 @@
                                 <div class="col-md-6 d-flex align-items-end">
                                     <button type="button" onclick="generarPdfInventario()" class="btn-pdf"
                                             style="background: linear-gradient(135deg, #1a4a6b, #1a73e8);
-                                               color: #fff;
-                                               box-shadow: 0 4px 14px rgba(26,115,232,.35);
-                                               margin-top: 0;">
+                                       color: #fff;
+                                       box-shadow: 0 4px 14px rgba(26,115,232,.35);
+                                       margin-top: 0;">
                                         <i class="fas fa-file-pdf"></i> Generar PDF
                                     </button>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" id="inv-conteo-fisico" class="custom-control-input">
+                                        <label class="custom-control-label" for="inv-conteo-fisico" style="font-size:13px;">
+                                            Incluir columna de conteo físico
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -382,7 +393,8 @@
 
         function generarPdfInventario() {
             const idMaterial = document.getElementById('inv-material').value;
-            window.open(`{{ url('admin/reporte/inventario/pdf') }}/${idMaterial}`, '_blank');
+            const conteo = document.getElementById('inv-conteo-fisico').checked ? 1 : 0;
+            window.open(`{{ url('admin/reporte/inventario/pdf') }}/${idMaterial}/${conteo}`, '_blank');
         }
 
         function generarPdfPeriodo() {

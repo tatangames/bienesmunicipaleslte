@@ -7,6 +7,7 @@ use App\Models\Cuenta;
 use App\Models\Departamentos;
 use App\Models\Equipos;
 use App\Models\InformacionGeneral;
+use App\Models\Materiales;
 use App\Models\ObjetoEspecifico;
 use App\Models\Proveedor;
 use App\Models\Rubro;
@@ -78,6 +79,13 @@ class ConfiguracionController extends Controller
         if ($validar->fails()){ return ['success' => 0];}
 
         if(UnidadMedida::where('id', $request->id)->first()){
+
+            // Verificar si algún material ya tiene asignada esta unidad de medida
+            $tieneMateriales = Materiales::where('id_medida', $request->id)->exists();
+
+            if($tieneMateriales){
+                return ['success' => 3]; // No se puede editar, está en uso
+            }
 
             UnidadMedida::where('id', $request->id)->update([
                 'nombre' => $request->medida
@@ -280,7 +288,15 @@ class ConfiguracionController extends Controller
         if ($validar->fails()) { return ['success' => 0]; }
 
         $dato = ObjetoEspecifico::find($request->id);
-        return $dato ? ['success' => 1, 'info' => $dato] : ['success' => 2];
+        if (!$dato) { return ['success' => 2]; }
+
+        $tieneMateriales = $dato->materiales()->exists();
+
+        return [
+            'success' => 1,
+            'info' => $dato,
+            'tiene_materiales' => $tieneMateriales,
+        ];
     }
 
     public function editarObjetoEspecifico(Request $request)
@@ -297,12 +313,18 @@ class ConfiguracionController extends Controller
         $dato = ObjetoEspecifico::find($request->id);
         if (!$dato) { return ['success' => 2]; }
 
+        // Bloqueo también en backend: si ya tiene materiales asignados, no se permite editar
+        if ($dato->materiales()->exists()) {
+            return ['success' => 3, 'message' => 'No se puede editar, el objeto específico ya tiene materiales asignados.'];
+        }
+
         $dato->id_cuenta = $request->id_cuenta;
         $dato->codigo    = $request->codigo;
         $dato->nombre    = $request->nombre;
 
         return $dato->save() ? ['success' => 1] : ['success' => 2];
     }
+
 
 
     //******************** PROVEEDOR *************************************************************
@@ -337,7 +359,6 @@ class ConfiguracionController extends Controller
         try {
             $dato = new Proveedor();
             $dato->nombre = $request->nombre;
-            $dato->telefono = $request->telefono;
             $dato->save();
 
             DB::commit();
@@ -350,25 +371,29 @@ class ConfiguracionController extends Controller
     }
 
 
-    public function infoProveedor(Request $request)
-    {
+    public function informacionProveedor(Request $request){
         $regla = array(
-            'id' => 'required'
+            'id' => 'required',
         );
 
         $validar = Validator::make($request->all(), $regla);
 
-        if ($validar->fails()) {
-            return ['success' => 0];
-        }
+        if ($validar->fails()){ return ['success' => 0]; }
 
-        $info = Proveedor::where('id', $request->id)->first();
+        $lista = Proveedor::where('id', $request->id)->first();
+        if (!$lista) { return ['success' => 2]; }
 
-        return ['success' => 1, 'info' => $info];
+        $tieneEntradas = $lista->entradas()->exists();
+
+        return [
+            'success' => 1,
+            'info' => $lista,
+            'tiene_entradas' => $tieneEntradas,
+        ];
     }
 
-    public function actualizarProveedor(Request $request)
-    {
+    public function editarProveedor(Request $request){
+
         $regla = array(
             'id' => 'required',
             'nombre' => 'required'
@@ -376,17 +401,21 @@ class ConfiguracionController extends Controller
 
         $validar = Validator::make($request->all(), $regla);
 
-        if ($validar->fails()) {
-            return ['success' => 0];
+        if ($validar->fails()){ return ['success' => 0]; }
+
+        $proveedor = Proveedor::where('id', $request->id)->first();
+        if (!$proveedor) { return ['success' => 2]; }
+
+        // Bloqueo en backend: si ya tiene entradas asociadas, no se permite editar
+        if ($proveedor->entradas()->exists()) {
+            return ['success' => 3, 'message' => 'No se puede editar, este proveedor ya tiene entradas registradas.'];
         }
 
-        Proveedor::where('id', $request->id)->update([
-            'nombre' => $request->nombre,
-            'telefono' => $request->telefono
-        ]);
+        $proveedor->update(['nombre' => $request->nombre]);
 
         return ['success' => 1];
     }
+
 
 
 

@@ -122,6 +122,18 @@ class RepuestosController extends Controller
         ]);
         if ($validar->fails()) { return ['success' => 0]; }
 
+        // ── Verificar si el material ya tiene entradas registradas ──
+        $tieneEntradas = DB::table('entradas_detalle')
+            ->where('id_material', $request->id)
+            ->exists();
+
+        if ($tieneEntradas) {
+            return [
+                'success' => 3,
+                'msg'     => 'Este material ya tiene entradas registradas y no puede editarse.',
+            ];
+        }
+
         Materiales::where('id', $request->id)->update([
             'id_medida'        => $request->unidad ?: null,
             'id_objespecifico' => $request->id_objespecifico,
@@ -131,7 +143,6 @@ class RepuestosController extends Controller
 
         return ['success' => 1];
     }
-
 
 
     //*******************************************************************

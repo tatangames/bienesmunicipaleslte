@@ -1008,8 +1008,9 @@ class ReportesController extends Controller
 
 
 
-    public function pdfInventarioActual($idMaterial = 0)
+    public function pdfInventarioActual($idMaterial = 0, $conteo = 0)
     {
+        $conteo       = ((int) $conteo) === 1;
         $fechaHoy     = Carbon::now('America/El_Salvador')->format('d-m-Y');
         $logoalcaldia = 'images/logo.png';
 
@@ -1126,18 +1127,40 @@ class ReportesController extends Controller
     </tr>
 </table>";
 
+        // ── Anchos de columna y padding, según si se incluye conteo físico ──
+        $colObjEspec    = $conteo ? '9%'  : '11%';
+        $colMaterial    = $conteo ? '23%' : '33%';
+        $colMedida      = $conteo ? '9%'  : '12%';
+        $colDisponible  = $conteo ? '9%'  : '10%';
+        $colPrecio      = $conteo ? '12%' : '14%';
+        $colValor       = $conteo ? '12%' : '14%';
+        $colConteo      = '13%';
+        $colDiferencia  = '13%';
+
+        $paddingHeader = $conteo ? '9px 6px'  : '5px 6px';
+        $paddingFila   = $conteo ? '10px 6px' : '4px 6px';
+        $paddingSub    = $conteo ? '8px 6px'  : '4px 6px';
+
+        $columnasExtraHeader = '';
+        if ($conteo) {
+            $columnasExtraHeader = "
+    <td style='font-weight:bold; width:{$colConteo}; font-size:11px; color:#fff; padding:{$paddingHeader}; border:0.8px solid #2D3748;'>Conteo Físico</td>
+    <td style='font-weight:bold; width:{$colDiferencia}; font-size:11px; color:#fff; padding:{$paddingHeader}; border:0.8px solid #2D3748;'>Diferencia</td>";
+        }
+
         // ── Tabla de datos ────────────────────────────────────────────────
         $tabla = $encabezado . "
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:8px; border:0.8px solid #D1D5DB;'>
 
 <thead>
     <tr style='background:#4A5568;'>
-        <td style='font-weight:bold; width:11%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Obj. Espec.</td>
-        <td style='font-weight:bold; width:33%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Material</td>
-        <td style='font-weight:bold; width:12%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Medida</td>
-        <td style='font-weight:bold; width:10%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Disponible</td>
-        <td style='font-weight:bold; width:14%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Precio Unit.</td>
-        <td style='font-weight:bold; width:14%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #2D3748;'>Valor (\$)</td>
+        <td style='font-weight:bold; width:{$colObjEspec}; font-size:11px; color:#fff; padding:{$paddingHeader}; border:0.8px solid #2D3748;'>Obj. Espec.</td>
+        <td style='font-weight:bold; width:{$colMaterial}; font-size:11px; color:#fff; padding:{$paddingHeader}; border:0.8px solid #2D3748;'>Material</td>
+        <td style='font-weight:bold; width:{$colMedida}; font-size:11px; color:#fff; padding:{$paddingHeader}; border:0.8px solid #2D3748;'>Medida</td>
+        <td style='font-weight:bold; width:{$colDisponible}; font-size:11px; color:#fff; padding:{$paddingHeader}; border:0.8px solid #2D3748;'>Disponible</td>
+        <td style='font-weight:bold; width:{$colPrecio}; font-size:11px; color:#fff; padding:{$paddingHeader}; border:0.8px solid #2D3748;'>Precio Unit.</td>
+        <td style='font-weight:bold; width:{$colValor}; font-size:11px; color:#fff; padding:{$paddingHeader}; border:0.8px solid #2D3748;'>Valor (\$)</td>
+        {$columnasExtraHeader}
     </tr>
 </thead>
     <tbody>";
@@ -1147,18 +1170,69 @@ class ReportesController extends Controller
         $codigoActual      = null;
         $subtotalCodigo    = 0;
         $subtotalCantCod   = 0;
+        $colspanExtra      = $conteo ? "<td colspan='2' style='background:#dce8f5; border:0.8px solid #bbb;'></td>" : '';
+
+        // ── NUEVO: seguimiento del "grupo" de material repetido (solo aplica cuando $conteo = true) ──
+        $materialClaveActual    = null;
+        $materialNombreActual   = '';
+        $materialObjespecActual = '';
+        $filasMaterialActual    = 0;
+        $sumCantidadMaterial    = 0;
+        $sumValorMaterial       = 0;
+
+        // Imprime el subtotal del material agrupado (solo si tuvo más de 1 fila)
+        $imprimirSubtotalMaterial = function () use (
+            &$tabla,
+            &$materialNombreActual,
+            &$materialObjespecActual,
+            &$filasMaterialActual,
+            &$sumCantidadMaterial,
+            &$sumValorMaterial,
+            $paddingSub
+        ) {
+            if ($filasMaterialActual <= 1) {
+                return;
+            }
+
+            $cantFmt  = number_format($sumCantidadMaterial, 2);
+            $montoFmt = number_format($sumValorMaterial, 4);
+
+            $tabla .= "
+        <tr style='background:#eef3fb;'>
+            <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:{$paddingSub}; border:0.8px solid #cdd7e3;'>SUBTOTAL {$materialNombreActual} [{$materialObjespecActual}]</td>
+            <td style='font-weight:bold; font-size:11px; padding:{$paddingSub}; border:0.8px solid #cdd7e3;'>$cantFmt</td>
+            <td style='background:#eef3fb; border:0.8px solid #cdd7e3;'></td>
+            <td style='font-weight:bold; font-size:11px; padding:{$paddingSub}; border:0.8px solid #cdd7e3;'>\$ $montoFmt</td>
+            <td style='font-size:11px; padding:{$paddingSub}; border:0.8px solid #cdd7e3;'>&nbsp;</td>
+            <td style='font-size:11px; padding:{$paddingSub}; border:0.8px solid #cdd7e3;'>&nbsp;</td>
+        </tr>";
+        };
 
         foreach ($stock as $info) {
-            // ── Subtotal al cambiar de objeto específico ──────────────────
+
+            // ── NUEVO: detectar si esta fila repite el material anterior (objespec+nombre+medida) ──
+            $esRepetido = false;
+            if ($conteo) {
+                $claveMaterial = $info['objespec'] . '|' . $info['nombre'] . '|' . $info['medida'];
+                $esRepetido    = ($materialClaveActual === $claveMaterial);
+
+                // Si cambiamos de material, cerrar el subtotal del material anterior (si aplica)
+                if (!$esRepetido && $materialClaveActual !== null) {
+                    $imprimirSubtotalMaterial();
+                }
+            }
+
+            // ── Subtotal al cambiar de objeto específico (igual que antes) ──
             if ($codigoActual !== null && $info['objespec'] !== $codigoActual) {
                 $cantFmt  = number_format($subtotalCantCod, 2);
                 $montoFmt = number_format($subtotalCodigo, 4);
                 $tabla .= "
         <tr style='background:#dce8f5;'>
-            <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
-            <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>$cantFmt</td>
+            <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:{$paddingSub}; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
+            <td style='font-weight:bold; font-size:11px; padding:{$paddingSub}; border:0.8px solid #bbb;'>$cantFmt</td>
             <td style='background:#dce8f5; border:0.8px solid #bbb;'></td>
-            <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>\$ $montoFmt</td>
+            <td style='font-weight:bold; font-size:11px; padding:{$paddingSub}; border:0.8px solid #bbb;'>\$ $montoFmt</td>
+            {$colspanExtra}
         </tr>";
                 $subtotalCodigo  = 0;
                 $subtotalCantCod = 0;
@@ -1170,39 +1244,71 @@ class ReportesController extends Controller
             $granTotal         += $info['total'];
             $sumaTotalCantidad += $info['cantidad'];
 
+            // ── NUEVO: acumular datos del grupo de material actual ──
+            if ($conteo) {
+                if (!$esRepetido) {
+                    $materialClaveActual    = $claveMaterial;
+                    $materialNombreActual   = $info['nombre'];
+                    $materialObjespecActual = $info['objespec'];
+                    $filasMaterialActual    = 0;
+                    $sumCantidadMaterial    = 0;
+                    $sumValorMaterial       = 0;
+                }
+                $filasMaterialActual++;
+                $sumCantidadMaterial += $info['cantidad'];
+                $sumValorMaterial    += $info['total'];
+            }
+
             $precioFmt = number_format($info['precio'], 4);
             $totalFmt  = number_format($info['total'], 4);
             $cantFmt   = number_format($info['cantidad'], 2);
 
+            $celdasExtra = $conteo ? "
+            <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>&nbsp;</td>
+            <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>&nbsp;</td>" : '';
+
+            // ── NUEVO: si la fila es repetición del material anterior, dejar en blanco Obj. Espec., Material y Medida ──
+            $objespecCell = $esRepetido ? '&nbsp;' : $info['objespec'];
+            $nombreCell   = $esRepetido ? '&nbsp;' : $info['nombre'];
+            $medidaCell   = $esRepetido ? '&nbsp;' : $info['medida'];
+
             $tabla .= "
         <tr>
-            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['objespec']}</td>
-            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['nombre']}</td>
-            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['medida']}</td>
-            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>$cantFmt</td>
-            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>\$ $precioFmt</td>
-            <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>\$ $totalFmt</td>
+            <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>{$objespecCell}</td>
+            <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>{$nombreCell}</td>
+            <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>{$medidaCell}</td>
+            <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>$cantFmt</td>
+            <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>\$ $precioFmt</td>
+            <td style='font-size:11px; padding:{$paddingFila}; border:0.8px solid #ccc;'>\$ $totalFmt</td>
+            {$celdasExtra}
         </tr>";
         }
 
-        // Último subtotal
+        // ── NUEVO: cerrar el subtotal del último grupo de material (si aplica) ──
+        if ($conteo) {
+            $imprimirSubtotalMaterial();
+        }
+
+        // Último subtotal por objeto específico
         if ($codigoActual !== null) {
             $cantFmt  = number_format($subtotalCantCod, 2);
             $montoFmt = number_format($subtotalCodigo, 4);
             $tabla .= "
         <tr style='background:#dce8f5;'>
-            <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
-            <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>$cantFmt</td>
+            <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:{$paddingSub}; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
+            <td style='font-weight:bold; font-size:11px; padding:{$paddingSub}; border:0.8px solid #bbb;'>$cantFmt</td>
             <td style='background:#dce8f5; border:0.8px solid #bbb;'></td>
-            <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>\$ $montoFmt</td>
+            <td style='font-weight:bold; font-size:11px; padding:{$paddingSub}; border:0.8px solid #bbb;'>\$ $montoFmt</td>
+            {$colspanExtra}
         </tr>";
         }
 
         // Sin resultados
         if (empty($stock)) {
+            $colspanTotal = $conteo ? 8 : 6;
             $tabla .= "
         <tr>
-            <td colspan='6' style='text-align:center; font-size:12px; padding:12px; color:#888;'>
+            <td colspan='{$colspanTotal}' style='text-align:center; font-size:12px; padding:12px; color:#888;'>
                 No hay materiales con existencias disponibles.
             </td>
         </tr>";
@@ -1242,9 +1348,6 @@ class ReportesController extends Controller
         $mpdf->WriteHTML($tabla, 2);
         $mpdf->Output('inventario_' . date('Ymd_His') . '.pdf', 'I');
     }
-
-
-
 
 
     public function reportePDFInicialPorPeriodos($desde, $hasta)

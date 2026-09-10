@@ -11,4 +11,9 @@ class TipoCompra extends Model
     protected $table = 'tipo_compra';
     public $timestamps = false;
     protected $fillable = ['nombre'];
+
+    public function entradas()
+    {
+        return $this->hasMany(Entradas::class, 'id_tipocompra');
+    }
 }

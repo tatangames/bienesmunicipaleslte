@@ -141,21 +141,30 @@
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Cantidad <span class="text-danger">*</span></label>
                                             <input type="number" id="cantidad" min="1" max="1000000"
                                                    class="form-control" autocomplete="off" placeholder="0">
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Precio (4 decimales) <span class="text-danger">*</span></label>
                                             <input type="number" id="precio-producto" min="0" max="9000000"
                                                    step="0.0001" class="form-control" autocomplete="off" placeholder="0.0000">
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label class="text-success" style="font-weight:bold;">
+                                                <i class="fas fa-calculator"></i> Subtotal:
+                                            </label>
+                                            <input type="text" id="preview-subtotal" class="form-control font-weight-bold text-success"
+                                                   readonly placeholder="$0.00" style="background:#f4f9f4; font-size:1.1rem;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Detalle (Opcional)</label>
                                             <input type="text" id="codigo" maxlength="100"
@@ -194,14 +203,22 @@
                                 <thead>
                                 <tr>
                                     <th style="width:6%">#</th>
-                                    <th style="width:38%">Material</th>
-                                    <th style="width:12%">Cantidad</th>
-                                    <th style="width:16%">Detalle</th>
-                                    <th style="width:14%">Precio</th>
-                                    <th style="width:14%">Opciones</th>
+                                    <th style="width:30%">Material</th>
+                                    <th style="width:10%">Cantidad</th>
+                                    <th style="width:14%">Detalle</th>
+                                    <th style="width:12%">Precio</th>
+                                    <th style="width:12%">Subtotal</th>
+                                    <th style="width:12%">Opciones</th>
                                 </tr>
                                 </thead>
                                 <tbody></tbody>
+                                <tfoot>
+                                <tr id="fila-total">
+                                    <td colspan="5" class="text-right" style="font-weight:bold;background:#f4f6f9;">TOTAL GENERAL:</td>
+                                    <td id="total-general" class="text-success" style="font-weight:bold;background:#f4f6f9;">$0.00</td>
+                                    <td style="background:#f4f6f9;"></td>
+                                </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -244,16 +261,38 @@
             var hoy = new Date();
             document.getElementById('fecha').value = hoy.toJSON().slice(0, 10);
 
-
             // Cerrar droplista al click fuera
             $(document).click(function () {
                 $('.droplista').hide();
             });
+
+            // ── Preview de subtotal en tiempo real dentro del modal ──
+            $('#cantidad, #precio-producto').on('input', function () {
+                calcularPreviewSubtotal();
+            });
         });
+
+        // ── Preview subtotal en el modal ──────────────────────────
+        function calcularPreviewSubtotal() {
+            var cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
+            var precio   = parseFloat(document.getElementById('precio-producto').value) || 0;
+            var subtotal = cantidad * precio;
+            document.getElementById('preview-subtotal').value = '$' + subtotal.toFixed(4);
+        }
+
+        // ── Recalcular total general de la tabla ──────────────────
+        function recalcularTotal() {
+            var total = 0;
+            $("input[name='arraySubtotal[]']").each(function () {
+                total += parseFloat($(this).attr('data-subtotal')) || 0;
+            });
+            document.getElementById('total-general').textContent = '$' + total.toFixed(4);
+        }
 
         // ── Modal ─────────────────────────────────────────────────────
         function abrirModal() {
             document.getElementById('formulario-repuesto').reset();
+            document.getElementById('preview-subtotal').value = '';
             $('#repuesto').attr('data-info', '0').attr('data-nombre', '');
             $('#modalRepuesto').modal({ backdrop: 'static', keyboard: false });
         }
@@ -288,6 +327,7 @@
             }
 
             var nFilas = $('#matriz tbody tr').length + 1;
+            var subtotal = (parseFloat(cantidad) * parseFloat(precio)).toFixed(4);
 
             var fila = `
                 <tr>
@@ -310,6 +350,10 @@
                         $${parseFloat(precio).toFixed(4)}
                     </td>
                     <td>
+                        <input name="arraySubtotal[]" type="hidden" data-subtotal="${subtotal}" value="${subtotal}">
+                        <span class="font-weight-bold text-success">$${subtotal}</span>
+                    </td>
+                    <td>
                         <button type="button" class="btn btn-danger btn-sm btn-block"
                                 onclick="borrarFila(this)">
                             <i class="fas fa-trash"></i> Borrar
@@ -318,9 +362,11 @@
                 </tr>`;
 
             $('#matriz tbody').append(fila);
+            recalcularTotal();
             toastr.success('Material agregado');
 
             document.getElementById('formulario-repuesto').reset();
+            document.getElementById('preview-subtotal').value = '';
             $('#repuesto').attr('data-info', '0').attr('data-nombre', '');
         }
 
@@ -328,6 +374,7 @@
         function borrarFila(btn) {
             $(btn).closest('tr').remove();
             renumerarFilas();
+            recalcularTotal();
         }
 
         function renumerarFilas() {
@@ -388,7 +435,6 @@
 
             if (!fecha)       { toastr.error('Fecha es requerida'); return; }
 
-
             var nFilas = $('#matriz tbody tr').length;
             if (nFilas === 0) { toastr.error('Agregue al menos un material'); return; }
 
@@ -406,7 +452,6 @@
                 var infoCantidad = $(this).find('input[name="cantidadArray[]"]').val();
                 var infoCodigo  = $(this).find('input[name="codigoArray[]"]').val();
                 var infoPrecio  = $(this).find('input[name="arrayPrecio[]"]').val();
-
 
                 if (!idMaterial || idMaterial == 0) {
                     colorRojoTabla(i);
@@ -465,6 +510,7 @@
             $('#select-tipocompra').val('').trigger('change');
             $('#select-proveedor').val('').trigger('change');
             $('#matriz tbody tr').remove();
+            document.getElementById('total-general').textContent = '$0.00';
         }
     </script>
 @endsection

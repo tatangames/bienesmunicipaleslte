@@ -83,8 +83,8 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/proveedor/index', [ConfiguracionController::class,'vistaProveedor'])->name('admin.proveedor.index');
     Route::get('/admin/proveedor/tabla/index', [ConfiguracionController::class,'tablaProveedor']);
     Route::post('/admin/proveedor/nuevo', [ConfiguracionController::class,'nuevoProveedor']);
-    Route::post('/admin/proveedor/informacion', [ConfiguracionController::class,'infoProveedor']);
-    Route::post('/admin/proveedor/editar', [ConfiguracionController::class,'actualizarProveedor']);
+    Route::post('/admin/proveedor/informacion', [ConfiguracionController::class,'informacionProveedor']);
+    Route::post('/admin/proveedor/editar', [ConfiguracionController::class,'editarProveedor']);
 
 
     // --- INVENTARIO ---
@@ -150,7 +150,7 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/jefefirma/index', [ConfiguracionController::class,'vistaJefeFirmas'])->name('admin.jefefirma.index');
     Route::post('/admin/jefefirma/actualizar',  [ConfiguracionController::class,'actualizarJefeFirmas']);
 
-    Route::get('admin/reporte/inventario/pdf/{idMaterial}', [ReportesController::class, 'pdfInventarioActual'])->name('admin.reporte.inventario.pdf');
+    Route::get('admin/reporte/inventario/pdf/{idMaterial}/{conteo?}', [ReportesController::class, 'pdfInventarioActual'])->name('admin.reporte.inventario.pdf');
 
     Route::get('/admin/bodega/reportespdf/inicial/final/{desde}/{hasta}', [ReportesController::class, 'reportePDFInicialPorPeriodos']);
 

@@ -122,12 +122,23 @@
                     <div class="card-header">
                         <h3 class="card-title">Listado de Salidas</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div id="tablaDatatable"></div>
+                    <div class="card-body p-0">
+
+                        {{-- Mensaje inicial: nada cargado hasta que se filtre --}}
+                        <div id="div-instruccion" class="text-center text-muted py-5">
+                            <i class="fas fa-search fa-3x mb-3 d-block"></i>
+                            <p class="mb-0">Utiliza los filtros de arriba y presiona <strong>Filtrar</strong> para ver el historial.</p>
+                        </div>
+
+                        {{-- Tabla real, oculta hasta que se filtre --}}
+                        <div id="div-tabla" style="display:none">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div id="tablaDatatable"></div>
+                                </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -282,6 +293,7 @@
                                 <th>#</th>
                                 <th>Material</th>
                                 <th class="text-center">Cantidad</th>
+                                <th>Unidad</th>
                                 <th class="text-right">Precio unitario</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
@@ -346,7 +358,6 @@
     <script>
         var _salidaIdActual       = null;
         var _salidaTituloActual   = '';
-        var _tablaCargada         = false;
         var _seguroFiltroMaterial = true;
 
         $(function () {
@@ -389,6 +400,7 @@
                 $('#tabla_filter input').addClass('form-control form-control-sm').css('display', 'inline-block');
             }
 
+            // ── Cargar tabla (solo al presionar Filtrar) ───────────
             function cargarTabla() {
                 const fechaDesde = $('#filtro-fecha-desde').val();
                 const fechaHasta = $('#filtro-fecha-hasta').val();
@@ -406,11 +418,24 @@
                 if (orden)      params.append('orden',       orden);
 
                 const url = params.toString() ? ruta + '?' + params.toString() : ruta;
+
+                // Mostrar tabla y estado "cargando"
+                $('#div-instruccion').hide();
+                $('#div-tabla').show();
+                $('#tablaDatatable').html(
+                    '<div class="text-center text-muted py-5">' +
+                    '<i class="fas fa-spinner fa-spin fa-2x mb-3 d-block"></i>' +
+                    '<p class="mb-0">Cargando historial...</p>' +
+                    '</div>'
+                );
+
                 $('#tablaDatatable').load(url, function () { initDataTable(); });
             }
 
+            // NO se llama cargarTabla() automáticamente al entrar a la vista.
+            // Solo se ejecuta cuando el usuario presiona "Filtrar".
+
             window.recargar = function () {
-                _tablaCargada = true;
                 cargarTabla();
             };
 
@@ -422,7 +447,11 @@
                 $('#filtro-contrato').val('');
                 $('#filtro-orden').val('');
                 $('#drop-filtro-material').hide().html('');
-                if (_tablaCargada) cargarTabla();
+
+                // Vuelve al estado inicial (sin tabla cargada)
+                $('#div-tabla').hide();
+                $('#tablaDatatable').html('');
+                $('#div-instruccion').show();
             };
 
             // ── Autocomplete filtro material ──────────────────────
@@ -594,6 +623,7 @@
                                     <td class="text-center">
                                         <span id="cantidad-span-${fila.id}">${fila.cantidad_salida}</span>
                                     </td>
+                                    <td>${fila.unidad ?? '—'}</td>
                                     <td class="text-right">$${fila.precio}</td>
                                     <td class="text-center">
                                         <button type="button"
