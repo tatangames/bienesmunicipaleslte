@@ -11,6 +11,9 @@ class Salidas extends Model
     public $timestamps = false;
     protected $fillable = ['id_equipo','fecha', 'descripcion', 'ficha_nombre', 'ficha_talonario'];
 
+    protected $casts = [
+        'fecha' => 'date',
+    ];
 
     public function detalle()
     {

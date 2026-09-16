@@ -321,6 +321,7 @@ class HistorialController extends Controller
             ->get()
             ->map(function ($item) {
                 $item->fecha_fmt = date('d/m/Y', strtotime($item->fecha));
+                $item->fecha_ts  = strtotime($item->fecha); // para ordenar
                 return $item;
             });
 
