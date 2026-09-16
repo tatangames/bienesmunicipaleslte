@@ -1094,11 +1094,11 @@ class ReportesController extends Controller
         <td style='padding:3px 6px;'>{$autorizaEntrega}</td>
     </tr>
     <tr>
-        <td style='white-space:nowrap; padding:3px 0;'>A petición de:</td>
+        <td style='white-space:nowrap; padding:3px 0;'><strong>A petición de:</strong></td>
         <td style='padding:3px 6px;'>{$peticionDe}</td>
     </tr>
     <tr>
-        <td style='white-space:nowrap; padding:3px 0;'>Para uso en:</td>
+        <td style='white-space:nowrap; padding:3px 0;'><strong>Para uso en:</strong></td>
         <td style='padding:3px 6px;'>{$paraUsoEn}</td>
     </tr>
     <tr>
