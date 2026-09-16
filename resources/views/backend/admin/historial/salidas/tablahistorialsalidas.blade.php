@@ -21,7 +21,7 @@
                             @foreach($arraySalidas as $dato)
                                 <tr>
                                     <td>{{ $dato->id }}</td>
-                                    <td data-order="{{ $dato->fecha->format('Y-m-d') }}">{{ $dato->fecha_fmt }}</td>
+                                    <td data-order="{{ $dato->fecha->timestamp }}">{{ $dato->fecha_fmt }}</td>
                                     <td>{{ $dato->ficha_talonario ?? '' }}</td>
                                     <td>{{ $dato->numero_contrato ?? '' }}</td>
                                     <td>{{ $dato->numero_orden ?? '' }}</td>
