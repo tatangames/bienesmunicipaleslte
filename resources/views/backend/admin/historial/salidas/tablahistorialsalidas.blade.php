@@ -28,6 +28,14 @@
                                     <td>{{ $dato->nombre_firma_3 ?? '' }}</td>
                                     <td>{{ $dato->descripcion ?? '' }}</td>
                                     <td class="text-center">
+
+                                        <button type="button"
+                                                class="btn btn-info btn-xs"
+                                                style="margin:2px"
+                                                onclick="window.open('{{ url('/admin/historial/salidas/detalle') }}/{{ $dato->id }}', '_blank')">
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                        </button>
+
                                         <button type="button"
                                                 class="btn btn-success btn-xs"
                                                 style="margin:2px"
@@ -40,12 +48,7 @@
                                                 onclick="verDetalle({{ $dato->id }}, 'Salida #{{ $dato->id }} — {{ $dato->fecha_fmt }}')">
                                             <i class="fas fa-list"></i> Detalle
                                         </button>
-                                        <button type="button"
-                                                class="btn btn-secondary btn-xs"
-                                                style="margin:2px"
-                                                onclick="window.open('{{ url('/admin/historial/salidas/pdf') }}/{{ $dato->id }}', '_blank')">
-                                            <i class="fas fa-file-pdf"></i> PDF
-                                        </button>
+
                                         <button type="button"
                                                 class="btn btn-warning btn-xs"
                                                 style="margin:2px"

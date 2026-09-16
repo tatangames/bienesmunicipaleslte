@@ -1006,6 +1006,207 @@ class ReportesController extends Controller
 
 
 
+
+    public function pdfReporteSalidaTalonarioGuardado($id)
+    {
+        $salida = Salidas::with('detalles.entradaDetalle.material.unidadMedida')
+            ->findOrFail($id);
+
+        $fechaFmt     = $salida->fecha ? date('d/m/Y', strtotime($salida->fecha)) : '';
+        $logoalcaldia = 'images/logo.png';
+
+        // Campos del formulario (vienen de la BD)
+        $autorizaEntrega = htmlspecialchars($salida->autoriza_a ?? '');
+        $peticionDe      = htmlspecialchars($salida->peticion_a ?? '');
+        $paraUsoEn       = htmlspecialchars($salida->para_uso ?? '');
+        $firmaDerecha    = htmlspecialchars($salida->nombre_firma_3 ?? '');
+
+        $infoGeneral = \App\Models\InformacionGeneral::where('id', 1)->first();
+
+        // ── Encabezado ────────────────────────────────────────────────
+        $html = "
+<table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif;'>
+    <tr>
+        <td style='width:25%; border:0.8px solid #000; padding:6px 8px;'>
+            <table width='100%'>
+                <tr>
+                    <td style='width:30%; text-align:left;'>
+                        <img src='{$logoalcaldia}' style='height:38px'>
+                    </td>
+                    <td style='width:70%; text-align:left; color:#104e8c; font-size:13px; font-weight:bold; line-height:1.3;'>
+                        SANTA ANA NORTE<br>EL SALVADOR
+                    </td>
+                </tr>
+            </table>
+        </td>
+      <td style='width:50%; border-top:0.8px solid #000; border-bottom:0.8px solid #000;
+           padding:6px 8px; text-align:center; font-size:15px; font-weight:bold;'>
+    FORMULARIO ENTREGA DE<br>
+    MATERIALES DE BODEGA
+</td>
+        <td style='width:25%; border:0.8px solid #000; padding:0; vertical-align:top;'>
+            <table width='100%' style='font-size:10px;'>
+                <tr>
+                    <td width='40%' style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Código:</strong></td>
+                    <td width='60%' style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center; font-size: 12px'>MANB-002-FORM</td>
+                </tr>
+                <tr>
+                    <td style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Versión:</strong></td>
+                    <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center; font-size: 12px'>000</td>
+                </tr>
+                <tr>
+                    <td style='border-right:0.8px solid #000; padding:4px 6px;'><strong>Fecha de vigencia:</strong></td>
+                    <td style='padding:4px 6px; text-align:center; font-size: 12px'>22/10/2025</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<br>";
+
+        // ── Fecha ─────────────────────────────────────────────────────
+        $html .= "
+<table width='100%' style='font-family:Arial, sans-serif; font-size:13px; border-collapse:collapse;'>
+    <tr>
+        <td width='100%' style='text-align:right;'>
+            <strong>FECHA:</strong> {$fechaFmt}
+        </td>
+    </tr>
+</table>
+
+<table width='100%' style='font-family:Arial, sans-serif;'>
+    <tr>
+        <td align='left'>
+            <div style='border-top:1px solid #000; width:250px;'></div>
+            <div style='margin-top:5px; font-size:13px; font-weight:normal;'>
+                {$salida->encabezado}
+            </div>
+        </td>
+    </tr>
+</table>
+<br>";
+
+        // ── Autoriza / Petición / Uso ─────────────────────────────────
+        $html .= "
+<table width='100%' style='font-family:Arial, sans-serif; font-size:13px; border-collapse:collapse;'>
+    <tr>
+        <td style='white-space:nowrap; padding:3px 0; width:210px;'>Autoriza la entrega de materiales a:</td>
+        <td style='padding:3px 6px;'>{$autorizaEntrega}</td>
+    </tr>
+    <tr>
+        <td style='white-space:nowrap; padding:3px 0;'>A petición de:</td>
+        <td style='padding:3px 6px;'>{$peticionDe}</td>
+    </tr>
+    <tr>
+        <td style='white-space:nowrap; padding:3px 0;'>Para uso en:</td>
+        <td style='padding:3px 6px;'>{$paraUsoEn}</td>
+    </tr>
+    <tr>
+        <td style='padding:5px 0;' colspan='2'>Según el siguiente detalle:</td>
+    </tr>
+</table>
+<br>";
+
+        // ── Tabla de materiales ───────────────────────────────────────
+        $html .= "
+<table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; font-size:11px;'>
+    <thead>
+        <tr>
+            <th style='width:5%;  border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size: 12px'>N°</th>
+            <th style='width:42%; border:0.8px solid #000; padding:5px 8px; text-align:center; background:#e8e8e8; font-size: 12px'>DESCRIPCION</th>
+            <th style='width:16%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size: 12px'>UNIDAD DE MEDIDA</th>
+            <th style='width:10%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size: 12px'>CANTIDAD</th>
+            <th style='width:27%; border:0.8px solid #000; padding:5px 8px; text-align:center; background:#e8e8e8; font-size: 12px'>OBSERVACIONES</th>
+        </tr>
+    </thead>
+    <tbody>";
+
+        $num = 0;
+        foreach ($salida->detalles as $item) {
+            $num++;
+
+            $cantidad    = htmlspecialchars($item->cantidad_salida ?? '');
+            $observacion = htmlspecialchars($item->observaciones ?? '');
+
+            $entDet   = $item->entradaDetalle;
+            $material = $entDet?->material;
+
+            $nombreMat = htmlspecialchars($material->nombre ?? '');
+            $unidadMed = htmlspecialchars($material->unidadMedida->nombre ?? '');
+
+            $html .= "
+        <tr>
+            <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size: 13px'>{$num}</td>
+            <td style='border:0.8px solid #000; padding:4px; text-align:left; vertical-align:middle; font-size:13px;'>{$nombreMat}</td>
+            <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size:13px;'>{$unidadMed}</td>
+            <td style='border:0.8px solid #000; padding:4px; text-align:center; vertical-align:middle; font-size: 13px'>{$cantidad}</td>
+            <td style='border:0.8px solid #000; padding:4px 8px; vertical-align:middle; text-align:left; font-size: 13px'>{$observacion}</td>
+        </tr>";
+        }
+
+        $html .= "
+    </tbody>
+</table>
+<br>";
+
+        // ── Texto de cierre ───────────────────────────────────────────
+        $html .= "
+<table width='100%' style='font-family:Arial, sans-serif;'>
+    <tr>
+        <td align='left'>
+            <div style='margin-top:5px; font-size:12px; font-weight:normal;'>
+                {$salida->pie_pagina}
+            </div>
+        </td>
+    </tr>
+</table>
+<br><br><br>";
+
+        // ── Firmas ────────────────────────────────────────────────────
+        $html .= "
+        <table width='100%' style='margin-top:" . ($infoGeneral->px_firmas ?? 0) . "px; font-family:Arial, sans-serif; font-size:11px; border-collapse:collapse;'>
+            <tr>
+                <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
+                <td width='20%'></td>
+                <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
+            </tr>
+            <tr>
+                <td style='text-align:center; font-size:12px; padding-top:6px;'>{$salida->nombre_firma_1}</td>
+                <td></td>
+                <td style='text-align:center; font-size:12px; padding-top:6px;'>{$firmaDerecha}</td>
+            </tr>
+            <tr>
+                <td style='text-align:center; font-size:12px; font-weight:bold;'>{$salida->nombre_firma_2}</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>";
+
+        // ── Generar PDF ───────────────────────────────────────────────
+        $mpdf = new \Mpdf\Mpdf([
+            'tempDir'       => sys_get_temp_dir(),
+            'format'        => 'LETTER',
+            'margin_top'    => 15,
+            'margin_bottom' => 15,
+            'margin_left'   => 15,
+            'margin_right'  => 15,
+        ]);
+
+        $mpdf->SetTitle('Formulario de Salida de Bodega');
+        $mpdf->showImageErrors = false;
+
+        $stylesheet = file_get_contents('css/cssregistro.css');
+        $mpdf->WriteHTML($stylesheet, 1);
+        $mpdf->WriteHTML($html, 2);
+        $mpdf->Output('salida_bodega_' . $salida->id . '.pdf', 'I');
+    }
+
+
+
+
+
+
+
     public function pdfInventarioActual($idMaterial = 0, $conteo = 0)
     {
         $conteo = ((int)$conteo) === 1;
