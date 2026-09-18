@@ -168,33 +168,10 @@
                                     </div>
                                 </div>
 
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
-        {{-- ══ Card Nombres / Firmas ══ --}}
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-10">
-                        <div class="card card-gray-dark">
-                            <div class="card-header">
-                                <h3 class="card-title">Firmas / Nombres</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
+                                <hr>
+                                <p style="color: red">Las FIRMAS se pueden cambiar en el Menu Configuración -> Ajuste de Firmas</p>
 
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label>Firma Derecha: <small class="text-muted">(Opcional)</small></label>
-                                            <input type="text" class="form-control" autocomplete="off"
-                                                   maxlength="100" id="firma_derecha" placeholder="Nombre...">
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -538,7 +515,6 @@
                 autoriza_entrega: document.getElementById('autoriza_entrega').value,
                 peticion_de:      document.getElementById('peticion_de').value,
                 para_uso_en:      document.getElementById('para_uso_en').value,
-                firma_derecha:    document.getElementById('firma_derecha').value,
             };
         }
 

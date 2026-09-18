@@ -808,7 +808,6 @@ class ReportesController extends Controller
         $autorizaEntrega = htmlspecialchars($request->input('autoriza_entrega', ''));
         $peticionDe      = htmlspecialchars($request->input('peticion_de', ''));
         $paraUsoEn       = htmlspecialchars($request->input('para_uso_en', ''));
-        $firmaDerecha    = htmlspecialchars($request->input('firma_derecha', ''));
 
         $infoGeneral = \App\Models\InformacionGeneral::where('id', 1)->first();
 
@@ -964,10 +963,21 @@ class ReportesController extends Controller
 </table>
 <br><br><br>";
 
+        // ── Salto de página antes de firmas (condicional) ──────────────
+        if ($infoGeneral && $infoGeneral->salto_pagina) {
+            $html .= "<pagebreak>";
+        }
+
         // ── Firmas ────────────────────────────────────────────────────
+        // Izquierda: nombre_firma_1 / nombre_firma_2 (desde InformacionGeneral)
+        // Derecha:   nombre_salida / cargo_salida     (desde InformacionGeneral)
+        // mPDF no aplica margin-top de forma confiable sobre <table>,
+        // así que la distancia se logra con un div espaciador con altura fija.
+        $pxFirmas = (int) ($infoGeneral->px_firmas ?? 0);
+        $html .= "<div style='height:{$pxFirmas}px;'>&nbsp;</div>";
 
         $html .= "
-            <table width='100%' style='margin-top:" . ($infoGeneral->px_firmas ?? 0) . "px; font-family:Arial, sans-serif; font-size:11px; border-collapse:collapse;'>
+            <table width='100%' style='font-family:Arial, sans-serif; font-size:11px; border-collapse:collapse;'>
                 <tr>
                     <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
                     <td width='20%'></td>
@@ -976,12 +986,12 @@ class ReportesController extends Controller
                 <tr>
                     <td style='text-align:center; font-size:12px; padding-top:6px;'>{$infoGeneral->nombre_firma_1}</td>
                     <td></td>
-                    <td style='text-align:center; font-size:12px; padding-top:6px;'>{$firmaDerecha}</td>
+                    <td style='text-align:center; font-size:12px; padding-top:6px;'>{$infoGeneral->nombre_salida}</td>
                 </tr>
                 <tr>
                     <td style='text-align:center; font-size:12px; font-weight:bold;'>{$infoGeneral->nombre_firma_2}</td>
                     <td></td>
-                    <td></td>
+                    <td style='text-align:center; font-size:12px; font-weight:bold;'>{$infoGeneral->cargo_salida}</td>
                 </tr>
             </table>";
 

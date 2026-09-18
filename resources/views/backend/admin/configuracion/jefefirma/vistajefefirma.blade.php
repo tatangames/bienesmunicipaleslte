@@ -44,31 +44,83 @@
                 </div>
                 <div class="card-body">
 
-                    <div class="form-group">
-                        <label>Nombre Firma 1</label>
-                        <input type="text" maxlength="100" class="form-control" id="nombre1"
-                               value="{{ $infoGeneral->nombre_firma_1 }}" autocomplete="off">
-                    </div>
+                    {{-- ══ Firmas Izquierda / Derecha ══ --}}
+                    <div class="row">
 
-                    <div class="form-group">
-                        <label>Nombre Firma 2</label>
-                        <input type="text" maxlength="100" class="form-control" id="nombre2"
-                               value="{{ $infoGeneral->nombre_firma_2 }}" autocomplete="off">
+                        {{-- Columna Izquierda --}}
+                        <div class="col-md-6">
+                            <p class="font-weight-bold">Para Firmas lado Izquierdo en Registro de Salidas</p>
+
+                            <div class="form-group">
+                                <label>Nombre</label>
+                                <input type="text" maxlength="100" class="form-control" id="nombre_izq1"
+                                       value="{{ $infoGeneral->nombre_firma_1 }}" autocomplete="off">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Cargo</label>
+                                <input type="text" maxlength="100" class="form-control" id="nombre_izq2"
+                                       value="{{ $infoGeneral->nombre_firma_2 }}" autocomplete="off">
+                            </div>
+                        </div>
+
+                        {{-- Columna Derecha --}}
+                        <div class="col-md-6">
+                            <p class="font-weight-bold">Para Firmas lado Derecho en Registro de Salidas</p>
+
+                            <div class="form-group">
+                                <label>Nombre</label>
+                                <input type="text" maxlength="100" class="form-control" id="nombre_der1"
+                                       value="{{ $infoGeneral->nombre_salida }}" autocomplete="off">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Cargo</label>
+                                <input type="text" maxlength="100" class="form-control" id="nombre_der2"
+                                       value="{{ $infoGeneral->cargo_salida }}" autocomplete="off">
+                            </div>
+                        </div>
+
                     </div>
 
                     <hr>
 
-                    <div class="form-group">
-                        <label>Encabezado</label>
-                        <input type="text" maxlength="100" class="form-control" id="nombre2"
-                               value="{{ $infoGeneral->encabezado }}" autocomplete="off">
+                    {{-- ══ Encabezado y Distancias ══ --}}
+                    <p class="font-weight-bold text-muted">
+                        <i class="fas fa-ruler-combined mr-1"></i> Encabezado y distancias del documento
+                    </p>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Encabezado</label>
+                                <input type="text" maxlength="100" class="form-control" id="encabezado"
+                                       value="{{ $infoGeneral->encabezado }}" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Distancia Firmas</label>
+                                <input type="number" class="form-control" id="px_firmas"
+                                       value="{{ $infoGeneral->px_firmas }}" autocomplete="off">
+                            </div>
+                        </div>
                     </div>
 
-
-                    <div class="form-group">
-                        <label>Distancia Firmas</label>
-                        <input type="number" class="form-control" id="px_firmas"
-                               value="{{ $infoGeneral->px_firmas }}" autocomplete="off">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="d-block">Salto de página</label>
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="salto_pagina"
+                                        {{ $infoGeneral->salto_pagina ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="salto_pagina">
+                                        Activar salto de página antes de las firmas
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -101,9 +153,13 @@
             openLoading();
 
             var formData = new FormData();
-            formData.append('nombre1', document.getElementById('nombre1').value);
-            formData.append('nombre2', document.getElementById('nombre2').value);
+            formData.append('nombre_izq1', document.getElementById('nombre_izq1').value);
+            formData.append('nombre_izq2', document.getElementById('nombre_izq2').value);
+            formData.append('nombre_der1', document.getElementById('nombre_der1').value);
+            formData.append('nombre_der2', document.getElementById('nombre_der2').value);
+            formData.append('encabezado', document.getElementById('encabezado').value);
             formData.append('px_firmas', document.getElementById('px_firmas').value);
+            formData.append('salto_pagina', document.getElementById('salto_pagina').checked ? 1 : 0);
 
             axios.post(urlAdmin + '/admin/jefefirma/actualizar', formData)
                 .then((response) => {

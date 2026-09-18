@@ -23,6 +23,11 @@ return new class extends Migration
 
             $table->text('encabezado')->nullable();
             $table->text('pie_pagina')->nullable();
+
+            $table->string('nombre_salida', 100)->nullable();
+            $table->string('cargo_salida', 100)->nullable();
+
+            $table->boolean('salto_pagina');
         });
     }
 

@@ -23,8 +23,9 @@ class SalidasController extends Controller
 
     public function indexRegistroSalida()
     {
+        $informacionGeneral = InformacionGeneral::where('id', 1)->first();
 
-        return view('backend.admin.repuestos.salidas.vistasalidaregistro');
+        return view('backend.admin.repuestos.salidas.vistasalidaregistro', compact('informacionGeneral'));
     }
 
 
@@ -219,6 +220,8 @@ class SalidasController extends Controller
             $salida->nombre_firma_3  = $request->firma_derecha;
             $salida->encabezado = $infoGeneral->encabezado;
             $salida->pie_pagina = $infoGeneral->pie_pagina;
+            $salida->nombre_salida = $infoGeneral->nombre_salida;
+            $salida->cargo_salida = $infoGeneral->cargo_salida;
             $salida->save();
 
             // Guardar detalle

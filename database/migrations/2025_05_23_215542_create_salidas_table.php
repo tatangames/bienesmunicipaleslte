@@ -30,6 +30,9 @@ return new class extends Migration
             $table->string('para_uso', 200)->nullable();
             $table->string('peticion_a', 200)->nullable();
 
+            $table->string('nombre_salida', 100)->nullable();
+            $table->string('cargo_salida', 100)->nullable();
+
 
             $table->text('encabezado')->nullable();
             $table->text('pie_pagina')->nullable();
