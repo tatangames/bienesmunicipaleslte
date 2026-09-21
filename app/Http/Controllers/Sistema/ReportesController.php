@@ -1121,7 +1121,7 @@ class ReportesController extends Controller
         <tr>
             <th style='width:5%;  border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size: 12px'>N°</th>
             <th style='width:42%; border:0.8px solid #000; padding:5px 8px; text-align:center; background:#e8e8e8; font-size: 12px'>DESCRIPCION</th>
-            <th style='width:16%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size: 12px'>UNIDAD DE MEDIDA</th>
+            <th style='width:16%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size: 12px'>U/M</th>
             <th style='width:10%; border:0.8px solid #000; padding:5px 4px; text-align:center; background:#e8e8e8; font-size: 12px'>CANTIDAD</th>
             <th style='width:27%; border:0.8px solid #000; padding:5px 8px; text-align:center; background:#e8e8e8; font-size: 12px'>OBSERVACIONES</th>
         </tr>
