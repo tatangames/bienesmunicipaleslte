@@ -1890,8 +1890,8 @@ class ReportesController extends Controller
         <thead style='background:#f2f4f8'>
             <tr>
                 <th>#</th>
-                <th>Código</th>
-                <th>Descripción / Nombre</th>
+                <th>COD</th>
+                <th>DESCRIPCIÓN</th>
                 <th style='text-align:right; width:8%'>PRECIO</th>
                 <th style='text-align:right; width:6%'>INICIAL</th>
                 <th style='text-align:right; width:7%'>$ INICIAL</th>

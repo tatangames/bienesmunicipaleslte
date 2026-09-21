@@ -45,13 +45,39 @@
         /* ── Reset ── */
         *:focus { outline: none; }
 
+        /* ── Espaciado general de la página ── */
+        /* !important porque AdminLTE controla el padding de estos contenedores
+           desde su propio layout y puede sobreescribir reglas normales. */
+        .content-wrapper {
+            padding-bottom: 60px !important;
+        }
+        section.content {
+            padding-bottom: 60px !important;
+        }
+        .container-fluid {
+            padding-bottom: 20px !important;
+        }
+        /* Separador explícito: garantiza espacio real sin depender del layout padre */
+        .bottom-spacer {
+            width: 100%;
+            height: 60px;
+        }
+
         /* ── Tarjeta ── */
         .reporte-card {
             border: none;
             border-radius: 12px;
             box-shadow: 0 2px 18px rgba(0, 0, 0, .10);
-            margin-bottom: 24px;
+            margin-bottom: 28px;
             overflow: hidden;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Asegura separación consistente incluso en columnas flex (h-100) */
+        .row > [class*='col-'] {
+            margin-bottom: 4px;
         }
 
         /* ── Cabecera de tarjeta ── */
@@ -74,7 +100,11 @@
         }
 
         /* ── Cuerpo de tarjeta ── */
-        .reporte-body { padding: 22px 24px; background: #fff; }
+        .reporte-body {
+            padding: 22px 24px;
+            background: #fff;
+            flex: 1 1 auto;
+        }
 
         /* ── Etiqueta de campo ── */
         .field-label {
@@ -264,7 +294,7 @@
                 </div>
 
                 {{-- ── Control de Entradas/Salidas por Período ── --}}
-                <div class="col-md-6 d-flex">
+                <div class="col-md-6 d-flex mb-4">
                     <div class="reporte-card h-100 w-100">
                         <div class="reporte-header" style="background: linear-gradient(135deg, #6b4a1a, #e88e1a);">
                             <i class="fas fa-exchange-alt"></i>
@@ -327,7 +357,7 @@
                 </div>
 
                 {{-- ── Nombre para Firma ── --}}
-                <div class="col-md-6 d-flex">
+                <div class="col-md-6 d-flex mb-4">
                     <div class="reporte-card h-100 w-100">
                         <div class="reporte-header" style="background: linear-gradient(135deg, #6b4a1a, #e88e1a);">
                             <i class="fas fa-exchange-alt"></i>
@@ -368,6 +398,8 @@
                 </div>
 
             </div>{{-- /.row --}}
+
+            <div class="bottom-spacer"></div>
         </div>{{-- /.container-fluid --}}
     </section>
 @stop
