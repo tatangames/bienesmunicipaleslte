@@ -170,7 +170,7 @@
 
 
                                 <hr>
-                                <p style="color: red">Las FIRMAS se pueden cambiar en el Menu Configuración -> Ajuste de Firmas</p>
+                                <p style="color: red; font-weight: bold">Las FIRMAS se pueden cambiar en el Menu Configuración -> Ajuste de Firmas</p>
 
                             </div>
                         </div>

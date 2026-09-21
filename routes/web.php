@@ -149,11 +149,10 @@ Route::middleware('auth:admin')->group(function () {
     // --- JEFE FIRMAS ---
     Route::get('/admin/jefefirma/index', [ConfiguracionController::class,'vistaJefeFirmas'])->name('admin.jefefirma.index');
     Route::post('/admin/jefefirma/actualizar',  [ConfiguracionController::class,'actualizarJefeFirmas']);
-
     Route::get('admin/reporte/inventario/pdf/{idMaterial}/{conteo?}', [ReportesController::class, 'pdfInventarioActual'])->name('admin.reporte.inventario.pdf');
-
     Route::get('/admin/bodega/reportespdf/inicial/final/{desde}/{hasta}', [ReportesController::class, 'reportePDFInicialPorPeriodos']);
-
+    Route::post('/admin/firmascontrol/actualizar', [ConfiguracionController::class,'actualizarFirmasControl'])
+        ->name('admin.firmascontrol.actualizar');
 
 
 

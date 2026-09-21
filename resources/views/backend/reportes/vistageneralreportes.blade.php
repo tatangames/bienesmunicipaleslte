@@ -295,6 +295,33 @@
                                        margin-top: 0;">
                                 <i class="fas fa-file-pdf"></i> Generar PDF
                             </button>
+
+                            <hr class="divider">
+
+                            <label class="field-label">Datos de Firma</label>
+
+                            <div class="fecha-row">
+                                <div class="fecha-box">
+                                    <label for="control-nombre">Nombre</label>
+                                    <input type="text"
+                                           id="control-nombre"
+                                           maxlength="100"
+                                           class="form-control form-control-sm"
+                                           value="{{ $informacionGeneral->control_nombre }}">
+                                </div>
+                                <div class="fecha-box">
+                                    <label for="control-cargo">Cargo</label>
+                                    <input type="text"
+                                           id="control-cargo"
+                                           maxlength="100"
+                                           class="form-control form-control-sm"
+                                           value="{{ $informacionGeneral->control_cargo }}">
+                                </div>
+                            </div>
+
+                            <button type="button" onclick="guardarFirmasControl()" class="btn btn-primary btn-sm">
+                                <i class="fas fa-save mr-1"></i> Guardar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -307,17 +334,6 @@
                             <h5>Nombre para Firma en Reporte</h5>
                         </div>
                         <div class="reporte-body">
-
-                            <div class="fecha-row">
-                                <div class="fecha-box">
-                                    <label for="nombre-firma">Nombre</label>
-                                    <input type="text"
-                                           id="nombre-firma"
-                                           maxlength="100"
-                                           class="form-control form-control-sm"
-                                           value="{{ $informacionGeneral->nombre_reporte }}">
-                                </div>
-                            </div>
 
                             <div class="fecha-row">
                                 <div class="fecha-box">
@@ -413,20 +429,38 @@
             window.open(`{{ url('admin/bodega/reportespdf/inicial/final') }}/${desde}/${hasta}`, '_blank');
         }
 
-        /* ── Guardar nombre de firma ── */
-        function guardarNombreReporte() {
-            const nombreFirma = $('#nombre-firma').val().trim();
-            const saltoPagina = $('#config-salto-pagina').is(':checked') ? 1 : 0;
-            const px_firmas = $('#px_firmas').val().trim();
+        /* ── Guardar nombre/cargo de firma del Control por Período ── */
+        function guardarFirmasControl() {
+            const controlNombre = $('#control-nombre').val().trim();
+            const controlCargo  = $('#control-cargo').val().trim();
 
-            if (!nombreFirma) {
-                toastr.error('Debe ingresar un nombre');
+            if (!controlNombre || !controlCargo) {
+                toastr.error('Debe ingresar nombre y cargo');
                 return;
             }
 
+            axios.post('{{ route('admin.firmascontrol.actualizar') }}', {
+                _token: '{{ csrf_token() }}',
+                controlNombre: controlNombre,
+                controlCargo: controlCargo,
+            })
+                .then(({ data }) => {
+                    if (data.success === 1) {
+                        toastr.success('Datos de firma actualizados correctamente');
+                    } else {
+                        toastr.error('No se pudo actualizar la configuración');
+                    }
+                })
+                .catch(() => toastr.error('Ocurrió un error al guardar'));
+        }
+
+        /* ── Guardar nombre de firma ── */
+        function guardarNombreReporte() {
+            const saltoPagina = $('#config-salto-pagina').is(':checked') ? 1 : 0;
+            const px_firmas = $('#px_firmas').val().trim();
+
             axios.post('{{ route('admin.informacion.actualizar.px') }}', {
                 _token: '{{ csrf_token() }}',
-                nombre_reporte: nombreFirma,
                 salto_pagina: saltoPagina,
                 px_firmas: px_firmas,
             })

@@ -446,7 +446,15 @@ class ConfiguracionController extends Controller
     }
 
 
+    public function actualizarFirmasControl(Request $request)
+    {
+        InformacionGeneral::where('id', 1)->update([
+            'control_nombre' => $request->controlNombre,
+            'control_cargo' => $request->controlCargo,
+        ]);
 
+        return ['success' => 1];
+    }
 
 
 

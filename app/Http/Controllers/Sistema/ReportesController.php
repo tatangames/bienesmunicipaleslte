@@ -755,7 +755,6 @@ class ReportesController extends Controller
     public function actualizarPxInformacionGeneral(Request $request)
     {
         $rules = [
-            'nombre_reporte' => 'required|string|max:100',
             'salto_pagina'   => 'required|boolean',
         ];
 
@@ -773,7 +772,6 @@ class ReportesController extends Controller
                 return ['success' => 0];
             }
 
-            $info->nombre_reporte = $request->nombre_reporte;
             $info->salto_pagina   = (int) $request->salto_pagina;
             $info->px_firmas     = (int) $request->px_firmas;
 
@@ -2038,15 +2036,18 @@ class ReportesController extends Controller
 
         // ── Config firmas ────────────────────────────────────────────────────
         $infoGeneral = \App\Models\InformacionGeneral::find(1);
-        $pxFirmas = (int)($infoGeneral->px_firmas ?? 60);
-        $saltoPagina = (bool)($infoGeneral->salto_pagina ?? false);
-        $margenMm = round($pxFirmas * 0.264583);
+        $pxFirmas    = (int) ($infoGeneral->px_firmas ?? 60);
+        $saltoPagina = (bool) ($infoGeneral->salto_pagina ?? false);
+        $margenMm    = round($pxFirmas * 0.264583);
 
         // ══ FIRMA ════════════════════════════════════════════════════════════
         if ($saltoPagina) {
             $html .= '<pagebreak />';
         }
 
+        // mPDF no aplica margin-top de forma confiable, así que la distancia
+        // se logra con un div espaciador con altura fija (igual que en el
+        // reporte de salida por talonario).
         $html .= "<div style='height:{$margenMm}mm; line-height:{$margenMm}mm; font-size:1px;'>&nbsp;</div>";
 
         $html .= "
@@ -2060,8 +2061,13 @@ class ReportesController extends Controller
         <td style='height:6px; font-size:1px; line-height:6px;'>&nbsp;</td>
     </tr>
     <tr>
+        <td style='text-align:center; font-family:Arial,sans-serif; font-size:12px;'>
+            {$infoGeneral->control_nombre}
+        </td>
+    </tr>
+    <tr>
         <td style='text-align:center; font-family:Arial,sans-serif; font-size:12px; font-weight:bold;'>
-            $infoGeneral->nombre_reporte
+            {$infoGeneral->control_cargo}
         </td>
     </tr>
 </table>
@@ -2074,8 +2080,6 @@ class ReportesController extends Controller
         $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
         $mpdf->Output();
     }
-
-
 
 
 

@@ -28,6 +28,12 @@ return new class extends Migration
             $table->string('cargo_salida', 100)->nullable();
 
             $table->boolean('salto_pagina');
+
+            // Para Reporte "CONTROL DE ENTRADAS / SALIDAS"
+            $table->string('control_nombre', 100)->nullable();
+            $table->string('control_cargo', 100)->nullable();
+
+
         });
     }
 
