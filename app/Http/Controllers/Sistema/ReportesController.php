@@ -663,8 +663,6 @@ class ReportesController extends Controller
         $tabla .= "
 <table width='100%' style='margin-top:10px; border-collapse:collapse;'>
     <tr>
-        <td style='font-weight:bold; font-size:13px; text-align:right; border-top:2px solid #000; padding-top:6px;'>TOTAL CANTIDAD:&nbsp;&nbsp;</td>
-        <td style='font-weight:bold; font-size:13px; width:12%; border-top:2px solid #000; padding-top:6px;'>$sumaTotalCantidadFmt</td>
         <td style='font-weight:bold; font-size:13px; text-align:right; border-top:2px solid #000; padding-top:6px;'>TOTAL GENERAL:&nbsp;&nbsp;</td>
         <td style='font-weight:bold; font-size:13px; width:18%; border-top:2px solid #000; padding-top:6px;'>\$ $granTotalFmt</td>
     </tr>
