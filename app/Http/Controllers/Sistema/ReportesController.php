@@ -335,38 +335,34 @@ class ReportesController extends Controller
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif;'>
     <thead>
         <tr style='background:#6c757d;'>
-            <td colspan='3' style='color:#fff; font-weight:bold; font-size:12px; padding:6px 8px; border:0.8px solid #888; text-align:center; letter-spacing:0.5px;'>
+            <td colspan='2' style='color:#fff; font-weight:bold; font-size:12px; padding:6px 8px; border:0.8px solid #888; text-align:center; letter-spacing:0.5px;'>
                 RESUMEN POR CODIGO PRESUPUESTARIO
             </td>
         </tr>
         <tr style='background:#6c757d;'>
-            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:20%;'>Cod. Presu.</td>
-            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:40%; text-align:right;'>Cantidad Total</td>
-            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:40%; text-align:right;'>Monto Total (\$)</td>
+            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:40%;'>Cod. Presu.</td>
+            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:60%; text-align:right;'>Monto Total (\$)</td>
         </tr>
     </thead>
     <tbody>";
 
         $filaIndex = 0;
         foreach ($resumenObjEsp as $codigo => $datos) {
-            $bgFila    = ($filaIndex % 2 === 0) ? '#ffffff' : '#f0f4fa';
-            $cantFmt   = number_format($datos['cantidad'], 2);
-            $montoFmt  = number_format($datos['total'], 4);
+            $bgFila   = ($filaIndex % 2 === 0) ? '#ffffff' : '#f0f4fa';
+            $montoFmt = number_format($datos['total'], 4);
 
             $tabla .= "
         <tr style='background:{$bgFila};'>
             <td style='font-size:11px; font-weight:bold; padding:5px 8px; border:0.8px solid #ccc;'>{$codigo}</td>
-            <td style='font-size:11px; padding:5px 8px; border:0.8px solid #ccc; text-align:right;'>{$cantFmt}</td>
             <td style='font-size:11px; padding:5px 8px; border:0.8px solid #ccc; text-align:right;'>\$ {$montoFmt}</td>
         </tr>";
             $filaIndex++;
         }
 
-        // Fila de totales del resumen
+// Fila de totales del resumen
         $tabla .= "
         <tr style='background:#e9ecef;'>
             <td style='font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #bbb;'>TOTAL</td>
-            <td style='font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #bbb; text-align:right;'>{$sumaTotalCantidadFmt}</td>
             <td style='font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #bbb; text-align:right;'>\$ {$granTotalFmt}</td>
         </tr>
     </tbody>
@@ -686,14 +682,13 @@ class ReportesController extends Controller
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif;'>
     <thead>
         <tr style='background:#6c757d;'>
-            <td colspan='3' style='color:#fff; font-weight:bold; font-size:12px; padding:6px 8px; border:0.8px solid #888; text-align:center; letter-spacing:0.5px;'>
+            <td colspan='2' style='color:#fff; font-weight:bold; font-size:12px; padding:6px 8px; border:0.8px solid #888; text-align:center; letter-spacing:0.5px;'>
                 RESUMEN POR CODIGO PRESUPUESTARIO
             </td>
         </tr>
         <tr style='background:#6c757d;'>
-            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:20%;'>Cod. Presu.</td>
-            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:40%; text-align:right;'>Cantidad Total</td>
-            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:40%; text-align:right;'>Monto Total (\$)</td>
+            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:40%;'>Cod. Presu.</td>
+            <td style='color:#fff; font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #888; width:60%; text-align:right;'>Monto Total (\$)</td>
         </tr>
     </thead>
     <tbody>";
@@ -701,13 +696,11 @@ class ReportesController extends Controller
         $filaIndex = 0;
         foreach ($resumenObjEsp as $codigo => $datos) {
             $bgFila   = ($filaIndex % 2 === 0) ? '#ffffff' : '#f0f0f0';
-            $cantFmt  = number_format($datos['cantidad'], 2);
             $montoFmt = number_format($datos['total'], 4);
 
             $tabla .= "
         <tr style='background:{$bgFila};'>
             <td style='font-size:11px; font-weight:bold; padding:5px 8px; border:0.8px solid #ccc;'>{$codigo}</td>
-            <td style='font-size:11px; padding:5px 8px; border:0.8px solid #ccc; text-align:right;'>{$cantFmt}</td>
             <td style='font-size:11px; padding:5px 8px; border:0.8px solid #ccc; text-align:right;'>\$ {$montoFmt}</td>
         </tr>";
             $filaIndex++;
@@ -716,7 +709,6 @@ class ReportesController extends Controller
         $tabla .= "
         <tr style='background:#e9ecef;'>
             <td style='font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #bbb;'>TOTAL</td>
-            <td style='font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #bbb; text-align:right;'>{$sumaTotalCantidadFmt}</td>
             <td style='font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #bbb; text-align:right;'>\$ {$granTotalFmt}</td>
         </tr>
     </tbody>
