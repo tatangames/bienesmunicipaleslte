@@ -71,13 +71,13 @@
                             <div class="form-group">
                                 <label>Nombre</label>
                                 <input type="text" maxlength="100" class="form-control" id="nombre_der1"
-                                       value="{{ $infoGeneral->nombre_salida }}" autocomplete="off">
+                                       value="{{ $infoGeneral->nombre_firma_3 }}" autocomplete="off">
                             </div>
 
                             <div class="form-group">
                                 <label>Cargo</label>
                                 <input type="text" maxlength="100" class="form-control" id="nombre_der2"
-                                       value="{{ $infoGeneral->cargo_salida }}" autocomplete="off">
+                                       value="{{ $infoGeneral->nombre_firma_4 }}" autocomplete="off">
                             </div>
                         </div>
 

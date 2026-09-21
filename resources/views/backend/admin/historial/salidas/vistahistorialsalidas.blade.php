@@ -194,20 +194,26 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Firma 1 <small class="text-muted">(Opcional)</small></label>
+                                    <label>Firma Izquierda Arriba <small class="text-muted">(Opcional)</small></label>
                                     <input type="text" id="firma1-editar" class="form-control" maxlength="100">
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Firma 2 <small class="text-muted">(Opcional)</small></label>
+                                    <label>Firma Izquierda Abajo <small class="text-muted">(Opcional)</small></label>
                                     <input type="text" id="firma2-editar" class="form-control" maxlength="100">
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Firma 3 <small class="text-muted">(Opcional)</small></label>
+                                    <label>Firma Derecha Arriba <small class="text-muted">(Opcional)</small></label>
                                     <input type="text" id="firma3-editar" class="form-control" maxlength="100">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Firma Derecha Abajo <small class="text-muted">(Opcional)</small></label>
+                                    <input type="text" id="firma4-editar" class="form-control" maxlength="100">
                                 </div>
                             </div>
                         </div>
@@ -518,6 +524,7 @@
                         $('#firma1-editar').val(s.nombre_firma_1       ?? '');
                         $('#firma2-editar').val(s.nombre_firma_2       ?? '');
                         $('#firma3-editar').val(s.nombre_firma_3       ?? '');
+                        $('#firma4-editar').val(s.nombre_firma_4       ?? '');
                         $('#autorizadoa-editar').val(s.autoriza_a      ?? '');
                         $('#peticiona-editar').val(s.peticion_a        ?? '');
                         $('#usoa-editar').val(s.para_uso               ?? '');
@@ -549,6 +556,7 @@
             formData.append('nombre_firma_1',  $('#firma1-editar').val().trim());
             formData.append('nombre_firma_2',  $('#firma2-editar').val().trim());
             formData.append('nombre_firma_3',  $('#firma3-editar').val().trim());
+            formData.append('nombre_firma_4',  $('#firma4-editar').val().trim());
             formData.append('autoriza_a',      $('#autorizadoa-editar').val().trim());
             formData.append('peticion_a',      $('#peticiona-editar').val().trim());
             formData.append('para_uso',        $('#usoa-editar').val().trim());

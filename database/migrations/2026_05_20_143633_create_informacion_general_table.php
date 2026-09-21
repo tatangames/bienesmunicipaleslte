@@ -17,23 +17,20 @@ return new class extends Migration
             // REPORTE PIXELES DISTANCIAS
             $table->integer('px_firmas');
 
+            // PARA EL BLOQUE SALIDA - GENERAR PDF
             $table->string('nombre_firma_1', 100)->nullable();
             $table->string('nombre_firma_2', 100)->nullable();
             $table->string('nombre_firma_3', 100)->nullable();
+            $table->string('nombre_firma_4', 100)->nullable();
 
             $table->text('encabezado')->nullable();
             $table->text('pie_pagina')->nullable();
-
-            $table->string('nombre_salida', 100)->nullable();
-            $table->string('cargo_salida', 100)->nullable();
 
             $table->boolean('salto_pagina');
 
             // Para Reporte "CONTROL DE ENTRADAS / SALIDAS"
             $table->string('control_nombre', 100)->nullable();
             $table->string('control_cargo', 100)->nullable();
-
-
         });
     }
 

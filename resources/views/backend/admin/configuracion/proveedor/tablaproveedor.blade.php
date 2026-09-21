@@ -8,7 +8,7 @@
                             <thead>
                             <tr>
                                 <th style="width: 20%">Nombre</th>
-                                <th style="width: 10%">Opciones</th>
+                                <th style="width: 6%">Opciones</th>
                             </tr>
                             </thead>
                             <tbody>

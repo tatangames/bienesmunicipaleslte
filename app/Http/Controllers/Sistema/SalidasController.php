@@ -217,11 +217,10 @@ class SalidasController extends Controller
             $salida->para_uso        = $request->para_uso_en;
             $salida->nombre_firma_1  = $infoGeneral->nombre_firma_1;
             $salida->nombre_firma_2  = $infoGeneral->nombre_firma_2;
-            $salida->nombre_firma_3  = $request->firma_derecha;
+            $salida->nombre_firma_3  = $infoGeneral->nombre_firma_3;
+            $salida->nombre_firma_4  = $infoGeneral->nombre_firma_4;
             $salida->encabezado = $infoGeneral->encabezado;
             $salida->pie_pagina = $infoGeneral->pie_pagina;
-            $salida->nombre_salida = $infoGeneral->nombre_salida;
-            $salida->cargo_salida = $infoGeneral->cargo_salida;
             $salida->save();
 
             // Guardar detalle

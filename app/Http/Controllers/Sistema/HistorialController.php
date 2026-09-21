@@ -351,6 +351,7 @@ class HistorialController extends Controller
                 'nombre_firma_1'  => $salida->nombre_firma_1,
                 'nombre_firma_2'  => $salida->nombre_firma_2,
                 'nombre_firma_3'  => $salida->nombre_firma_3,
+                'nombre_firma_4'  => $salida->nombre_firma_4,
                 'autoriza_a'      => $salida->autoriza_a,
                 'para_uso'        => $salida->para_uso,
                 'peticion_a'      => $salida->peticion_a,
@@ -376,6 +377,7 @@ class HistorialController extends Controller
         $salida->nombre_firma_1  = $request->nombre_firma_1  ?: null;
         $salida->nombre_firma_2  = $request->nombre_firma_2  ?: null;
         $salida->nombre_firma_3  = $request->nombre_firma_3  ?: null;
+        $salida->nombre_firma_4  = $request->nombre_firma_4  ?: null;
         $salida->autoriza_a      = $request->autoriza_a      ?: null;
         $salida->para_uso        = $request->para_uso        ?: null;
         $salida->peticion_a      = $request->peticion_a      ?: null;

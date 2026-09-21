@@ -22,17 +22,15 @@ return new class extends Migration
             $table->string('numero_contrato', 100)->nullable();
             $table->string('numero_orden', 100)->nullable();
 
+            // PARA EL BLOQUE SALIDA - GENERAR PDF
             $table->string('nombre_firma_1', 100)->nullable();
             $table->string('nombre_firma_2', 100)->nullable();
             $table->string('nombre_firma_3', 100)->nullable();
+            $table->string('nombre_firma_4', 100)->nullable();
 
             $table->string('autoriza_a', 200)->nullable();
             $table->string('para_uso', 200)->nullable();
             $table->string('peticion_a', 200)->nullable();
-
-            $table->string('nombre_salida', 100)->nullable();
-            $table->string('cargo_salida', 100)->nullable();
-
 
             $table->text('encabezado')->nullable();
             $table->text('pie_pagina')->nullable();
