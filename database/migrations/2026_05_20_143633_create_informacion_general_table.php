@@ -31,6 +31,8 @@ return new class extends Migration
             // Para Reporte "CONTROL DE ENTRADAS / SALIDAS"
             $table->string('control_nombre', 100)->nullable();
             $table->string('control_cargo', 100)->nullable();
+            $table->string('control_nombre_bodeguero', 100)->nullable();
+            $table->string('control_cargo_bodeguero', 100)->nullable();
         });
     }
 

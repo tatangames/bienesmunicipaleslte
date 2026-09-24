@@ -451,6 +451,8 @@ class ConfiguracionController extends Controller
         InformacionGeneral::where('id', 1)->update([
             'control_nombre' => $request->controlNombre,
             'control_cargo' => $request->controlCargo,
+            'control_nombre_bodeguero' => $request->controlNombreBodeguero,
+            'control_cargo_bodeguero' => $request->controlCargoBodeguero,
         ]);
 
         return ['success' => 1];

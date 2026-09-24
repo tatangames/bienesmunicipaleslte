@@ -349,6 +349,25 @@
                                 </div>
                             </div>
 
+                            <div class="fecha-row">
+                                <div class="fecha-box">
+                                    <label for="control-nombre-bodeguero">Nombre Bodeguero</label>
+                                    <input type="text"
+                                           id="control-nombre-bodeguero"
+                                           maxlength="100"
+                                           class="form-control form-control-sm"
+                                           value="{{ $informacionGeneral->control_nombre_bodeguero }}">
+                                </div>
+                                <div class="fecha-box">
+                                    <label for="control-cargo-bodeguero">Cargo Bodeguero</label>
+                                    <input type="text"
+                                           id="control-cargo-bodeguero"
+                                           maxlength="100"
+                                           class="form-control form-control-sm"
+                                           value="{{ $informacionGeneral->control_cargo_bodeguero }}">
+                                </div>
+                            </div>
+
                             <button type="button" onclick="guardarFirmasControl()" class="btn btn-primary btn-sm">
                                 <i class="fas fa-save mr-1"></i> Guardar
                             </button>
@@ -465,9 +484,11 @@
         function guardarFirmasControl() {
             const controlNombre = $('#control-nombre').val().trim();
             const controlCargo  = $('#control-cargo').val().trim();
+            const controlNombreBodeguero = $('#control-nombre-bodeguero').val().trim();
+            const controlCargoBodeguero  = $('#control-cargo-bodeguero').val().trim();
 
-            if (!controlNombre || !controlCargo) {
-                toastr.error('Debe ingresar nombre y cargo');
+            if (!controlNombre || !controlCargo || !controlNombreBodeguero || !controlCargoBodeguero) {
+                toastr.error('Debe ingresar nombre y cargo de ambas firmas');
                 return;
             }
 
@@ -475,6 +496,8 @@
                 _token: '{{ csrf_token() }}',
                 controlNombre: controlNombre,
                 controlCargo: controlCargo,
+                controlNombreBodeguero: controlNombreBodeguero,
+                controlCargoBodeguero: controlCargoBodeguero,
             })
                 .then(({ data }) => {
                     if (data.success === 1) {

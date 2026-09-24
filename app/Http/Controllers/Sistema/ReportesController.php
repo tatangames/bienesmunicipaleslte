@@ -2045,31 +2045,27 @@ class ReportesController extends Controller
         // mPDF no aplica margin-top de forma confiable, así que la distancia
         // se logra con un div espaciador con altura fija (igual que en el
         // reporte de salida por talonario).
-        $html .= "<div style='height:{$margenMm}mm; line-height:{$margenMm}mm; font-size:1px;'>&nbsp;</div>";
+                $html .= "<div style='height:{$margenMm}mm; line-height:{$margenMm}mm; font-size:1px;'>&nbsp;</div>";
 
-        $html .= "
-<table width='100%' style='border-collapse:collapse;'>
-    <tr>
-        <td style='text-align:center; font-family:Arial,sans-serif; font-size:13px;'>
-            F._____________________________
-        </td>
-    </tr>
-    <tr>
-        <td style='height:6px; font-size:1px; line-height:6px;'>&nbsp;</td>
-    </tr>
-    <tr>
-        <td style='text-align:center; font-family:Arial,sans-serif; font-size:12px;'>
-            {$infoGeneral->control_nombre}
-        </td>
-    </tr>
-    <tr>
-        <td style='text-align:center; font-family:Arial,sans-serif; font-size:12px; font-weight:bold;'>
-            {$infoGeneral->control_cargo}
-        </td>
-    </tr>
-</table>
-";
-
+                $html .= "
+        <table width='100%' style='font-family:Arial, sans-serif; font-size:11px; border-collapse:collapse;'>
+            <tr>
+                <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
+                <td width='20%'></td>
+                <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
+            </tr>
+            <tr>
+                <td style='text-align:center; font-size:13px; padding-top:6px;'>{$infoGeneral->control_nombre}</td>
+                <td></td>
+                <td style='text-align:center; font-size:13px; padding-top:6px;'>{$infoGeneral->control_nombre_bodeguero}</td>
+            </tr>
+            <tr>
+                <td style='text-align:center; font-size:13px; font-weight:bold;'>{$infoGeneral->control_cargo}</td>
+                <td></td>
+                <td style='text-align:center; font-size:13px; font-weight:bold;'>{$infoGeneral->control_cargo_bodeguero}</td>
+            </tr>
+        </table>
+        ";
 
 
 
