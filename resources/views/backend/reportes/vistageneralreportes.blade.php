@@ -380,7 +380,7 @@
                     <div class="reporte-card h-100 w-100">
                         <div class="reporte-header" style="background: linear-gradient(135deg, #6b4a1a, #e88e1a);">
                             <i class="fas fa-exchange-alt"></i>
-                            <h5>Nombre para Firma en Reporte</h5>
+                            <h5>Distancia para Firma en Reporte</h5>
                         </div>
                         <div class="reporte-body">
 
