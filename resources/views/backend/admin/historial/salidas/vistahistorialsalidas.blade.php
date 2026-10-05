@@ -277,7 +277,7 @@
 
     {{-- ══ Modal Detalle Salida ══ --}}
     <div class="modal fade" id="modalDetalle" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header bg-info">
                     <h5 class="modal-title text-white">
@@ -365,6 +365,15 @@
         var _salidaIdActual       = null;
         var _salidaTituloActual   = '';
         var _seguroFiltroMaterial = true;
+
+        // ── Configuración de decimales para precios ─────────────────
+        var DECIMALES = 5;
+
+        function formatoPrecio(valor) {
+            var num = parseFloat(valor);
+            if (isNaN(num)) return '—';
+            return '$' + num.toFixed(DECIMALES);
+        }
 
         $(function () {
             const ruta = "{{ url('/admin/historial/salidas/tabla') }}";
@@ -632,7 +641,7 @@
                                         <span id="cantidad-span-${fila.id}">${fila.cantidad_salida}</span>
                                     </td>
                                     <td>${fila.unidad ?? '—'}</td>
-                                    <td class="text-right">$${fila.precio}</td>
+                                    <td class="text-right">${formatoPrecio(fila.precio)}</td>
                                     <td class="text-center">
                                         <button type="button"
                                                 class="btn btn-warning btn-xs mr-1"

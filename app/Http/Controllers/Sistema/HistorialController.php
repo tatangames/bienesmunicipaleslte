@@ -9,14 +9,10 @@ use App\Models\Equipos;
 use App\Models\InformacionGeneral;
 use App\Models\Materiales;
 use App\Models\Proveedor;
-use App\Models\Reserva;
 use App\Models\Salidas;
 use App\Models\SalidasDetalle;
 use App\Models\TipoCompra;
 use App\Models\TipoEntrada;
-use App\Models\TipoProyecto;
-use App\Models\Transferencia;
-use App\Models\TransferenciaDetalle;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -159,7 +155,8 @@ class HistorialController extends Controller
                     'material'         => $item->material->nombre ?? '',
                     'unidad'           => $item->material->unidadMedida->nombre ?? '',
                     'cantidad_inicial' => $item->cantidad_inicial,
-                    'precio'           => number_format($item->precio, 4),
+                    // 5 decimales, sin separador de miles
+                    'precio'           => number_format((float) $item->precio, 5, '.', ''),
                     'precio_raw'       => $item->precio,
                     'tiene_salidas'    => $tieneSalidas ? 1 : 0,
                 ];
@@ -180,7 +177,7 @@ class HistorialController extends Controller
         }
 
         $detalle->codigo = $request->codigo ?: null;
-        $detalle->precio = $request->precio;
+        $detalle->precio = round((float) $request->precio, 5);
 
         // Actualizar cantidad solo si no tiene salidas
         if ($request->filled('cantidad')) {
@@ -427,7 +424,8 @@ class HistorialController extends Controller
                     'material'        => $item->entradaDetalle->material->nombre ?? '',
                     'cantidad_salida' => $item->cantidad_salida,
                     'unidad'          => $item->entradaDetalle->material->unidadMedida->nombre ?? '',
-                    'precio'          => number_format($item->entradaDetalle->precio ?? 0, 4),
+                    // 5 decimales, sin separador de miles
+                    'precio'          => number_format((float) ($item->entradaDetalle->precio ?? 0), 5, '.', ''),
                 ];
             });
 

@@ -21,7 +21,6 @@ class ReportesController extends Controller
 {
 
 
-
     public function pdfQueHaSalidoProyectos($desde, $hasta, $tipo = 2)
     {
         $fechaHoy     = Carbon::now('America/El_Salvador')->format('d-m-Y');
@@ -118,7 +117,7 @@ class ReportesController extends Controller
 
                     $idMat  = $entDet->id_material;
                     $precio = (float) ($entDet->precio ?? 0);
-                    $clave  = $idMat . '|' . number_format($precio, 4, '.', '');
+                    $clave  = $idMat . '|' . number_format($precio, 5, '.', '');
 
                     if (!isset($dataArray[$clave])) {
                         $dataArray[$clave] = [
@@ -149,7 +148,7 @@ class ReportesController extends Controller
             foreach ($dataArray as $info) {
                 if ($codigoActual !== null && $info['objespec'] !== $codigoActual) {
                     $cantFmt  = number_format($subtotalCantCod, 2);
-                    $montoFmt = number_format($subtotalCodigo, 4);
+                    $montoFmt = number_format($subtotalCodigo, 5);
                     $tabla .= "
         <tr style='background:#e9ecef;'>
             <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
@@ -174,8 +173,8 @@ class ReportesController extends Controller
                 $resumenObjEsp[$info['objespec']]['cantidad'] += $info['cantidad'];
                 $resumenObjEsp[$info['objespec']]['total']    += $info['total'];
 
-                $precioFmt = number_format($info['precio'], 4);
-                $totalFmt  = number_format($info['total'], 4);
+                $precioFmt = number_format($info['precio'], 5);
+                $totalFmt  = number_format($info['total'], 5);
 
                 $tabla .= "
         <tr>
@@ -191,7 +190,7 @@ class ReportesController extends Controller
             // Último subtotal
             if ($codigoActual !== null) {
                 $cantFmt  = number_format($subtotalCantCod, 2);
-                $montoFmt = number_format($subtotalCodigo, 4);
+                $montoFmt = number_format($subtotalCodigo, 5);
                 $tabla .= "
         <tr style='background:#e9ecef;'>
             <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
@@ -282,8 +281,8 @@ class ReportesController extends Controller
                     $resumenObjEsp[$objEsp]['cantidad'] += $cantidad;
                     $resumenObjEsp[$objEsp]['total']    += $total;
 
-                    $precioFmt = number_format($precio, 4);
-                    $totalFmt  = number_format($total, 4);
+                    $precioFmt = number_format($precio, 5);
+                    $totalFmt  = number_format($total, 5);
 
                     $tabla .= "
         <tr>
@@ -296,7 +295,7 @@ class ReportesController extends Controller
         </tr>";
                 }
 
-                $subtotalFmt         = number_format($subtotal, 4);
+                $subtotalFmt         = number_format($subtotal, 5);
                 $subtotalCantidadFmt = number_format($subtotalCantidad, 2);
 
                 $tabla .= "
@@ -312,7 +311,7 @@ class ReportesController extends Controller
         }
 
         // ── GRAN TOTAL ────────────────────────────────────────────────────
-        $granTotalFmt         = number_format($granTotal, 4);
+        $granTotalFmt         = number_format($granTotal, 5);
         $sumaTotalCantidadFmt = number_format($sumaTotalCantidad, 2);
 
         $tabla .= "
@@ -347,7 +346,7 @@ class ReportesController extends Controller
         $filaIndex = 0;
         foreach ($resumenObjEsp as $codigo => $datos) {
             $bgFila   = ($filaIndex % 2 === 0) ? '#ffffff' : '#f0f4fa';
-            $montoFmt = number_format($datos['total'], 4);
+            $montoFmt = number_format($datos['total'], 5);
 
             $tabla .= "
         <tr style='background:{$bgFila};'>
@@ -382,7 +381,6 @@ class ReportesController extends Controller
         $mpdf->WriteHTML($tabla, 2);
         $mpdf->Output('salidas_' . date('Ymd_His') . '.pdf', 'I');
     }
-
 
     public function vistaQueHaEntrado()
     {
@@ -485,7 +483,7 @@ class ReportesController extends Controller
                 foreach ($entrada->detalle as $det) {
                     $idMat  = $det->id_material;
                     $precio = (float) $det->precio;
-                    $clave  = $idMat . '|' . number_format($precio, 4, '.', '');
+                    $clave  = $idMat . '|' . number_format($precio, 5, '.', '');
 
                     if (!isset($dataArray[$clave])) {
                         $dataArray[$clave] = [
@@ -516,7 +514,7 @@ class ReportesController extends Controller
             foreach ($dataArray as $info) {
                 if ($codigoActual !== null && $info['objespec'] !== $codigoActual) {
                     $cantFmt  = number_format($subtotalCantCod, 2);
-                    $montoFmt = number_format($subtotalCodigo, 4);
+                    $montoFmt = number_format($subtotalCodigo, 5);
                     $tabla .= "
         <tr style='background:#e9ecef;'>
             <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
@@ -541,8 +539,8 @@ class ReportesController extends Controller
                 $resumenObjEsp[$info['objespec']]['cantidad'] += $info['cantidad'];
                 $resumenObjEsp[$info['objespec']]['total']    += $info['total'];
 
-                $precioFmt = number_format($info['precio'], 4);
-                $totalFmt  = number_format($info['total'], 4);
+                $precioFmt = number_format($info['precio'], 5);
+                $totalFmt  = number_format($info['total'], 5);
 
                 $tabla .= "
         <tr>
@@ -557,7 +555,7 @@ class ReportesController extends Controller
 
             if ($codigoActual !== null) {
                 $cantFmt  = number_format($subtotalCantCod, 2);
-                $montoFmt = number_format($subtotalCodigo, 4);
+                $montoFmt = number_format($subtotalCodigo, 5);
                 $tabla .= "
         <tr style='background:#e9ecef;'>
             <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
@@ -627,8 +625,8 @@ class ReportesController extends Controller
                     $resumenObjEsp[$objEsp]['cantidad'] += $cantidad;
                     $resumenObjEsp[$objEsp]['total']    += $total;
 
-                    $precioFmt = number_format($precio, 4);
-                    $totalFmt  = number_format($total, 4);
+                    $precioFmt = number_format($precio, 5);
+                    $totalFmt  = number_format($total, 5);
 
                     $tabla .= "
         <tr>
@@ -641,7 +639,7 @@ class ReportesController extends Controller
         </tr>";
                 }
 
-                $subtotalFmt         = number_format($subtotal, 4);
+                $subtotalFmt         = number_format($subtotal, 5);
                 $subtotalCantidadFmt = number_format($subtotalCantidad, 2);
 
                 $tabla .= "
@@ -657,7 +655,7 @@ class ReportesController extends Controller
         }
 
         // ── GRAN TOTAL ────────────────────────────────────────────────────
-        $granTotalFmt         = number_format($granTotal, 4);
+        $granTotalFmt         = number_format($granTotal, 5);
         $sumaTotalCantidadFmt = number_format($sumaTotalCantidad, 2);
 
         $tabla .= "
@@ -692,7 +690,7 @@ class ReportesController extends Controller
         $filaIndex = 0;
         foreach ($resumenObjEsp as $codigo => $datos) {
             $bgFila   = ($filaIndex % 2 === 0) ? '#ffffff' : '#f0f0f0';
-            $montoFmt = number_format($datos['total'], 4);
+            $montoFmt = number_format($datos['total'], 5);
 
             $tabla .= "
         <tr style='background:{$bgFila};'>
@@ -726,7 +724,6 @@ class ReportesController extends Controller
         $mpdf->WriteHTML($tabla, 2);
         $mpdf->Output('entradas_' . date('Ymd_His') . '.pdf', 'I');
     }
-
 
 
 
@@ -1239,7 +1236,7 @@ class ReportesController extends Controller
         }
 
         $entradas = $queryEntradas->get()->keyBy(function ($row) {
-            return $row->id_material . '|' . number_format((float)$row->precio, 4, '.', '');
+            return $row->id_material . '|' . number_format((float)$row->precio, 5, '.', '');
         });
 
         $querySalidas = \DB::table('salidas_detalle as sd')
@@ -1256,7 +1253,7 @@ class ReportesController extends Controller
         }
 
         $salidas = $querySalidas->get()->keyBy(function ($row) {
-            return $row->id_material . '|' . number_format((float)$row->precio, 4, '.', '');
+            return $row->id_material . '|' . number_format((float)$row->precio, 5, '.', '');
         });
 
         // ── Construir array de stock ──────────────────────────────────────
@@ -1401,7 +1398,7 @@ class ReportesController extends Controller
             }
 
             $cantFmt = number_format($sumCantidadMaterial, 2);
-            $montoFmt = number_format($sumValorMaterial, 4);
+            $montoFmt = number_format($sumValorMaterial, 5);
 
             $tabla .= "
         <tr style='background:#eef3fb;'>
@@ -1431,7 +1428,7 @@ class ReportesController extends Controller
             // ── Subtotal al cambiar de objeto específico ──
             if ($codigoActual !== null && $info['objespec'] !== $codigoActual) {
                 $cantFmt = number_format($subtotalCantCod, 2);
-                $montoFmt = number_format($subtotalCodigo, 4);
+                $montoFmt = number_format($subtotalCodigo, 5);
                 $tabla .= "
         <tr style='background:#dce8f5;'>
             <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:{$paddingSub}; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
@@ -1472,8 +1469,8 @@ class ReportesController extends Controller
                 $sumValorMaterial += $info['total'];
             }
 
-            $precioFmt = number_format($info['precio'], 4);
-            $totalFmt = number_format($info['total'], 4);
+            $precioFmt = number_format($info['precio'], 5);
+            $totalFmt = number_format($info['total'], 5);
             $cantFmt = number_format($info['cantidad'], 2);
 
             $celdasExtra = $conteo ? "
@@ -1505,7 +1502,7 @@ class ReportesController extends Controller
         // Último subtotal por objeto específico
         if ($codigoActual !== null) {
             $cantFmt = number_format($subtotalCantCod, 2);
-            $montoFmt = number_format($subtotalCodigo, 4);
+            $montoFmt = number_format($subtotalCodigo, 5);
             $tabla .= "
         <tr style='background:#dce8f5;'>
             <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:{$paddingSub}; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
@@ -1551,7 +1548,7 @@ class ReportesController extends Controller
     <tbody>";
 
             foreach ($resumenObjespec as $r) {
-                $totalResFmt = number_format($r['total'], 4);
+                $totalResFmt = number_format($r['total'], 5);
                 $tabla .= "
         <tr>
             <td style='font-size:11px; padding:5px 8px; border:0.8px solid #ccc;'>{$r['objespec']}</td>
@@ -1565,7 +1562,7 @@ class ReportesController extends Controller
         }
 
         // ── Total general (ya sin la sumatoria de unidades disponibles) ─────
-        $granTotalFmt = number_format($granTotal, 4);
+        $granTotalFmt = number_format($granTotal, 5);
 
         $tabla .= "
 <table width='100%' style='margin-top:10px; border-collapse:collapse;'>
@@ -1591,8 +1588,6 @@ class ReportesController extends Controller
         $mpdf->WriteHTML($tabla, 2);
         $mpdf->Output('inventario_' . date('Ymd_His') . '.pdf', 'I');
     }
-
-
 
 
 
@@ -1901,7 +1896,7 @@ class ReportesController extends Controller
             <td>{$i}</td>
             <td>" . e($r->codigo ?? '') . "</td>
             <td>" . e($r->descripcion ?? '') . "</td>
-            <td style='text-align:right'>$" . number_format($r->precio ?? 0, 4) . "</td>
+            <td style='text-align:right'>$" . number_format($r->precio ?? 0, 5) . "</td>
             <td style='text-align:right'>" . number_format($r->saldo_inicial_cant ?? 0) . "</td>
             <td style='text-align:right'>$" . number_format($r->saldo_inicial_money ?? 0, 2) . "</td>
             <td style='text-align:right'>" . number_format($r->entradas_mes_cant ?? 0) . "</td>
@@ -2045,9 +2040,9 @@ class ReportesController extends Controller
         // mPDF no aplica margin-top de forma confiable, así que la distancia
         // se logra con un div espaciador con altura fija (igual que en el
         // reporte de salida por talonario).
-                $html .= "<div style='height:{$margenMm}mm; line-height:{$margenMm}mm; font-size:1px;'>&nbsp;</div>";
+        $html .= "<div style='height:{$margenMm}mm; line-height:{$margenMm}mm; font-size:1px;'>&nbsp;</div>";
 
-                $html .= "
+        $html .= "
         <table width='100%' style='font-family:Arial, sans-serif; font-size:11px; border-collapse:collapse;'>
             <tr>
                 <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
@@ -2073,7 +2068,5 @@ class ReportesController extends Controller
         $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
         $mpdf->Output();
     }
-
-
 
 }

@@ -150,9 +150,9 @@
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label>Precio (4 decimales) <span class="text-danger">*</span></label>
+                                            <label>Precio (5 decimales) <span class="text-danger">*</span></label>
                                             <input type="number" id="precio-producto" min="0" max="9000000"
-                                                   step="0.0001" class="form-control" autocomplete="off" placeholder="0.0000">
+                                                   step="0.00001" class="form-control" autocomplete="off" placeholder="0.00000">
                                         </div>
                                     </div>
                                     <div class="col-md-3">
@@ -161,7 +161,7 @@
                                                 <i class="fas fa-calculator"></i> Subtotal:
                                             </label>
                                             <input type="text" id="preview-subtotal" class="form-control font-weight-bold text-success"
-                                                   readonly placeholder="$0.00" style="background:#f4f9f4; font-size:1.1rem;">
+                                                   readonly placeholder="$0.00000" style="background:#f4f9f4; font-size:1.1rem;">
                                         </div>
                                     </div>
                                     <div class="col-md-3">
@@ -215,7 +215,7 @@
                                 <tfoot>
                                 <tr id="fila-total">
                                     <td colspan="5" class="text-right" style="font-weight:bold;background:#f4f6f9;">TOTAL GENERAL:</td>
-                                    <td id="total-general" class="text-success" style="font-weight:bold;background:#f4f6f9;">$0.00</td>
+                                    <td id="total-general" class="text-success" style="font-weight:bold;background:#f4f6f9;">$0.00000</td>
                                     <td style="background:#f4f6f9;"></td>
                                 </tr>
                                 </tfoot>
@@ -248,6 +248,11 @@
         var seguroBuscador = true;
         var txtContenedorGlobal = null;
 
+        // ── Configuración de decimales ──────────────────────────────
+        var DECIMALES = 5;
+        var reglaEntero  = /^[0-9]\d*$/;
+        var reglaDecimal = /^([0-9]+\.?[0-9]{0,5})$/;
+
         $('#select-proveedor').select2({
             theme: 'bootstrap-5',
             placeholder: '-- Seleccionar proveedor --',
@@ -277,7 +282,7 @@
             var cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
             var precio   = parseFloat(document.getElementById('precio-producto').value) || 0;
             var subtotal = cantidad * precio;
-            document.getElementById('preview-subtotal').value = '$' + subtotal.toFixed(4);
+            document.getElementById('preview-subtotal').value = '$' + subtotal.toFixed(DECIMALES);
         }
 
         // ── Recalcular total general de la tabla ──────────────────
@@ -286,7 +291,7 @@
             $("input[name='arraySubtotal[]']").each(function () {
                 total += parseFloat($(this).attr('data-subtotal')) || 0;
             });
-            document.getElementById('total-general').textContent = '$' + total.toFixed(4);
+            document.getElementById('total-general').textContent = '$' + total.toFixed(DECIMALES);
         }
 
         // ── Modal ─────────────────────────────────────────────────────
@@ -307,9 +312,6 @@
             var codigo       = document.getElementById('codigo').value;
             var precio       = document.getElementById('precio-producto').value;
 
-            var reglaEntero   = /^[0-9]\d*$/;
-            var reglaDecimal  = /^([0-9]+\.?[0-9]{0,4})$/;
-
             if (idMaterial == 0 || idMaterial === '') {
                 toastr.error('Seleccione un material de la lista'); return;
             }
@@ -320,14 +322,14 @@
                 toastr.error('Cantidad máximo 1 millón'); return;
             }
             if (precio === '' || !precio.match(reglaDecimal) || parseFloat(precio) < 0) {
-                toastr.error('Precio debe ser un número decimal no negativo'); return;
+                toastr.error('Precio debe ser un número decimal no negativo (máximo 5 decimales)'); return;
             }
             if (parseFloat(precio) > 9000000) {
                 toastr.error('Precio máximo 9 millones'); return;
             }
 
             var nFilas = $('#matriz tbody tr').length + 1;
-            var subtotal = (parseFloat(cantidad) * parseFloat(precio)).toFixed(4);
+            var subtotal = (parseFloat(cantidad) * parseFloat(precio)).toFixed(DECIMALES);
 
             var fila = `
                 <tr>
@@ -347,7 +349,7 @@
                     </td>
                     <td>
                         <input name="arrayPrecio[]" type="hidden" value="${precio}">
-                        $${parseFloat(precio).toFixed(4)}
+                        $${parseFloat(precio).toFixed(DECIMALES)}
                     </td>
                     <td>
                         <input name="arraySubtotal[]" type="hidden" data-subtotal="${subtotal}" value="${subtotal}">
@@ -438,20 +440,17 @@
             var nFilas = $('#matriz tbody tr').length;
             if (nFilas === 0) { toastr.error('Agregue al menos un material'); return; }
 
-            var reglaEntero  = /^[0-9]\d*$/;
-            var reglaDecimal = /^([0-9]+\.?[0-9]{0,4})$/;
-
             var contenedorArray = [];
             var valido = true;
 
             $('#matriz tbody tr').each(function (i) {
                 if (!valido) return;
 
-                var idMaterial  = $(this).find('input[name="descripcionArray[]"]').attr('data-info');
-                var nombre      = $(this).find('input[name="descripcionArray[]"]').attr('data-nombre');
+                var idMaterial   = $(this).find('input[name="descripcionArray[]"]').attr('data-info');
+                var nombre       = $(this).find('input[name="descripcionArray[]"]').attr('data-nombre');
                 var infoCantidad = $(this).find('input[name="cantidadArray[]"]').val();
-                var infoCodigo  = $(this).find('input[name="codigoArray[]"]').val();
-                var infoPrecio  = $(this).find('input[name="arrayPrecio[]"]').val();
+                var infoCodigo   = $(this).find('input[name="codigoArray[]"]').val();
+                var infoPrecio   = $(this).find('input[name="arrayPrecio[]"]').val();
 
                 if (!idMaterial || idMaterial == 0) {
                     colorRojoTabla(i);
@@ -478,7 +477,7 @@
             formData.append('fecha',           fecha);
             formData.append('factura',         factura);
             formData.append('descripcion',     descripcion);
-            formData.append('id_proveedor', idProveedor);
+            formData.append('id_proveedor',    idProveedor);
             formData.append('contenedorArray', JSON.stringify(contenedorArray));
 
             openLoading();
@@ -510,7 +509,7 @@
             $('#select-tipocompra').val('').trigger('change');
             $('#select-proveedor').val('').trigger('change');
             $('#matriz tbody tr').remove();
-            document.getElementById('total-general').textContent = '$0.00';
+            document.getElementById('total-general').textContent = '$' + (0).toFixed(DECIMALES);
         }
     </script>
 @endsection

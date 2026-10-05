@@ -19,8 +19,8 @@ return new class extends Migration
             // La cantidad registrada que no cambia
             $table->integer('cantidad_inicial');
 
-            // 4 DECIMALES PARA PRECIO UNITARIO
-            $table->decimal('precio', 10,4)->default(0);
+            // 5 DECIMALES PARA PRECIO UNITARIO
+            $table->decimal('precio', 10,5)->default(0);
 
             // PUEDE SER COMO DETALLE DEL EMPAQUE O CUALQUIER COSA
             $table->string('codigo', 100)->nullable();
