@@ -81,8 +81,24 @@ class ReportesController extends Controller
         // ── Acumulador para el resumen de Objetos Específicos ─────────────────
         $resumenObjEsp = []; // ['codigo' => ['cantidad' => x, 'total' => y]]
 
-        // ── CABECERA COLUMNAS ─────────────────────────────────────────────
-        $theadSalidas = "
+        // ── CABECERA COLUMNAS: JUNTOS (con columna Fecha Salida) ──────────
+        $theadJuntos = "
+<table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:8px; border:0.8px solid #aaa;'>
+    <thead>
+        <tr style='background:#6c757d;'>
+            <td style='font-weight:bold; width:10%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #888;'>Cod. Presu.</td>
+            <td style='font-weight:bold; width:26%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #888;'>Material</td>
+            <td style='font-weight:bold; width:10%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #888;'>Medida</td>
+            <td style='font-weight:bold; width:9%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #888;'>Cantidad</td>
+            <td style='font-weight:bold; width:13%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #888;'>Fecha Salida</td>
+            <td style='font-weight:bold; width:16%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #888;'>Precio Unit.</td>
+            <td style='font-weight:bold; width:16%; font-size:11px; color:#fff; padding:5px 6px; border:0.8px solid #888;'>Total (\$)</td>
+        </tr>
+    </thead>
+    <tbody>";
+
+        // ── CABECERA COLUMNAS: SEPARADO (sin Fecha Salida, va en la ficha) ──
+        $theadSeparado = "
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:8px; border:0.8px solid #aaa;'>
     <thead>
         <tr style='background:#6c757d;'>
@@ -111,6 +127,8 @@ class ReportesController extends Controller
             $dataArray = [];
 
             foreach ($arraySalidas as $salida) {
+                $fechaSalida = date('d-m-Y', strtotime($salida->fecha));
+
                 foreach ($salida->detalle as $det) {
                     $entDet = $det->entradaDetalle;
                     if (!$entDet || !$entDet->material) continue;
@@ -127,10 +145,12 @@ class ReportesController extends Controller
                             'cantidad' => 0,
                             'total'    => 0,
                             'precio'   => $precio,
+                            'fechas'   => [], // fechas únicas de salida (cronológicas)
                         ];
                     }
                     $dataArray[$clave]['cantidad'] += $det->cantidad_salida;
                     $dataArray[$clave]['total']    += ($precio * $det->cantidad_salida);
+                    $dataArray[$clave]['fechas'][$fechaSalida] = true;
                 }
             }
 
@@ -139,7 +159,7 @@ class ReportesController extends Controller
                 return $cmp !== 0 ? $cmp : strcmp($a['nombre'], $b['nombre']);
             });
 
-            $tabla .= $theadSalidas;
+            $tabla .= $theadJuntos;
 
             $codigoActual    = null;
             $subtotalCodigo  = 0;
@@ -153,7 +173,7 @@ class ReportesController extends Controller
         <tr style='background:#e9ecef;'>
             <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
             <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>$cantFmt</td>
-            <td style='background:#e9ecef; border:0.8px solid #bbb;'></td>
+            <td colspan='2' style='background:#e9ecef; border:0.8px solid #bbb;'></td>
             <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>\$ $montoFmt</td>
         </tr>";
                     $subtotalCodigo  = 0;
@@ -175,6 +195,7 @@ class ReportesController extends Controller
 
                 $precioFmt = number_format($info['precio'], 5);
                 $totalFmt  = number_format($info['total'], 5);
+                $fechasFmt = implode('<br>', array_keys($info['fechas']));
 
                 $tabla .= "
         <tr>
@@ -182,6 +203,7 @@ class ReportesController extends Controller
             <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['nombre']}</td>
             <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['medida']}</td>
             <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>{$info['cantidad']}</td>
+            <td style='font-size:10px; padding:4px 6px; border:0.8px solid #ccc;'>$fechasFmt</td>
             <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>\$ $precioFmt</td>
             <td style='font-size:11px; padding:4px 6px; border:0.8px solid #ccc;'>\$ $totalFmt</td>
         </tr>";
@@ -195,7 +217,7 @@ class ReportesController extends Controller
         <tr style='background:#e9ecef;'>
             <td colspan='3' style='font-weight:bold; font-size:11px; text-align:right; padding:4px 6px; border:0.8px solid #bbb;'>SUBTOTAL [{$codigoActual}]</td>
             <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>$cantFmt</td>
-            <td style='background:#e9ecef; border:0.8px solid #bbb;'></td>
+            <td colspan='2' style='background:#e9ecef; border:0.8px solid #bbb;'></td>
             <td style='font-weight:bold; font-size:11px; padding:4px 6px; border:0.8px solid #bbb;'>\$ $montoFmt</td>
         </tr>";
             }
@@ -225,7 +247,6 @@ class ReportesController extends Controller
                 $tabla .= "
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:2px; border:0.8px solid #ccc;'>
 
-
     <tr>
         <td style='width:12%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
             Ficha
@@ -244,6 +265,15 @@ class ReportesController extends Controller
 
     <tr>
         <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
+            Fecha Salida
+        </td>
+        <td colspan='3' style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
+            $fechaFmt
+        </td>
+    </tr>
+
+    <tr>
+        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
             Descripción
         </td>
         <td colspan='3' style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
@@ -253,7 +283,7 @@ class ReportesController extends Controller
 
 </table>";
 
-                $tabla .= $theadSalidas;
+                $tabla .= $theadSeparado;
 
                 $subtotal         = 0;
                 $subtotalCantidad = 0;
@@ -356,7 +386,7 @@ class ReportesController extends Controller
             $filaIndex++;
         }
 
-// Fila de totales del resumen
+        // Fila de totales del resumen
         $tabla .= "
         <tr style='background:#e9ecef;'>
             <td style='font-weight:bold; font-size:11px; padding:5px 8px; border:0.8px solid #bbb;'>TOTAL</td>
