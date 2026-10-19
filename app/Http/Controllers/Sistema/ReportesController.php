@@ -248,35 +248,31 @@ class ReportesController extends Controller
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif; margin-bottom:2px; border:0.8px solid #ccc;'>
 
     <tr>
-        <td style='width:12%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
+        <td style='width:16%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5; white-space:nowrap;'>
             Ficha
         </td>
-        <td style='width:38%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
+        <td style='width:34%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
             $fichaNombre
         </td>
-
-        <td style='width:12%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
+        <td style='width:16%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5; white-space:nowrap;'>
             Talonario
         </td>
-        <td style='width:38%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
+        <td style='width:34%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
             $fichaTalon
         </td>
     </tr>
 
     <tr>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
+        <td style='width:16%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5; white-space:nowrap;'>
             Fecha Salida
         </td>
-        <td colspan='3' style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
+        <td style='width:34%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
             $fechaFmt
         </td>
-    </tr>
-
-    <tr>
-        <td style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5;'>
+        <td style='width:16%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px; font-weight:bold; background:#f5f5f5; white-space:nowrap;'>
             Descripción
         </td>
-        <td colspan='3' style='border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
+        <td style='width:34%; border:0.8px solid #ccc; padding:5px 7px; font-size:11px;'>
             $descripcion
         </td>
     </tr>
