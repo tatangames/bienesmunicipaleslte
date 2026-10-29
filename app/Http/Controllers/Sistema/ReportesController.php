@@ -1828,7 +1828,7 @@ class ReportesController extends Controller
                     <img src='{$logoalcaldia}' style='height:38px'>
                 </td>
                 <td style='width:70%; text-align:left; color:#104e8c; font-size:13px; font-weight:bold; line-height:1.3;'>
-                    REPORTE DE MOVIMIENTO DE INVENTARIO
+                    REPORTE DE INVENTARIO
                 </td>
             </tr>
         </table>
@@ -1844,7 +1844,7 @@ class ReportesController extends Controller
             </tr>
             <tr>
                 <td style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Versión:</strong></td>
-                <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'></td>
+                <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'>000</td>
             </tr>
             <tr>
                 <td style='border-right:0.8px solid #000; padding:4px 6px;'><strong>Fecha de vigencia:</strong></td>
@@ -2085,22 +2085,46 @@ class ReportesController extends Controller
 ";
         }
 
+
+        // ── Firma ─────────────────────────────────────────────────────────────
+
+        // ── Config firmas ────────────────────────────────────────────────────
+        $infoGeneral = \App\Models\InformacionGeneral::find(1);
+        $pxFirmas    = (int) ($infoGeneral->px_firmas ?? 60);
+        $saltoPagina = (bool) ($infoGeneral->salto_pagina ?? false);
+        $margenMm    = round($pxFirmas * 0.264583);
+
+        // ══ FIRMA ════════════════════════════════════════════════════════════
+        if ($saltoPagina) {
+            $html .= '<pagebreak />';
+        }
         // ── Firma (3 bloques) ─────────────────────────────────────────────────
         $informacionGeneral = InformacionGeneral::where('id', 1)->first();
         $margenFirma  = (int)  ($informacionGeneral->px_firmas ?? 40);
         $saltoPagina  = (bool) ($informacionGeneral->salto_pagina ?? false);
 
+        // mPDF no aplica margin-top de forma confiable, así que la distancia
+        // se logra con un div espaciador con altura fija (igual que en el
+        // reporte de salida por talonario).
+        $html .= "<div style='height:{$margenMm}mm; line-height:{$margenMm}mm; font-size:1px;'>&nbsp;</div>";
         $estiloSalto = $saltoPagina ? "page-break-before: always;" : "";
 
         $html .= "
+        <table width='100%' style='font-family:Arial, sans-serif; font-size:11px; border-collapse:collapse;'>
     <div style='{$estiloSalto} padding-top:{$margenFirma}px;'>
         <table width='100%' style='font-size:12px; text-align:center; border-collapse:collapse;'>
             <tr>
+                <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
+                <td width='20%'></td>
+                <td width='40%' style='text-align:center; padding-bottom:4px;'>________________________________</td>
                 <td style='width:33%; text-align:center; padding-bottom:0;'>F._____________________________</td>
                 <td style='width:33%; text-align:center; padding-bottom:0;'>F._____________________________</td>
                 <td style='width:33%; text-align:center; padding-bottom:0;'>F._____________________________</td>
             </tr>
             <tr>
+                <td style='text-align:center; font-size:13px; padding-top:6px;'>{$infoGeneral->control_nombre}</td>
+                <td></td>
+                <td style='text-align:center; font-size:13px; padding-top:6px;'>{$infoGeneral->control_nombre_bodeguero}</td>
                 <td style='width:33%; text-align:center;  padding-top:20px; font-size:12px;'>
                     {$informacionGeneral->nombre_reporte}
                 </td>
@@ -2112,6 +2136,9 @@ class ReportesController extends Controller
                 </td>
             </tr>
             <tr>
+                <td style='text-align:center; font-size:13px; font-weight:bold;'>{$infoGeneral->control_cargo}</td>
+                <td></td>
+                <td style='text-align:center; font-size:13px; font-weight:bold;'>{$infoGeneral->control_cargo_bodeguero}</td>
                 <td style='width:33%; text-align:center; font-weight:bold; font-size:12px;'>
                     {$informacionGeneral->cargo_reporte}
                 </td>
@@ -2123,8 +2150,10 @@ class ReportesController extends Controller
                 </td>
             </tr>
         </table>
-    </div>
-    ";
+        ";
+
+
+
 
         $mpdf->setFooter('Página {PAGENO} de {nb}');
         $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
