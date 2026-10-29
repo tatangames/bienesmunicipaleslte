@@ -1625,11 +1625,8 @@ class ReportesController extends Controller
         $desdeFormat = Carbon::parse($desde)->format('d/m/Y');
         $hastaFormat = Carbon::parse($hasta)->format('d/m/Y');
 
-        $s = $start->toDateString();
-        $e = $end->toDateString();
-
-        // ── Consulta: agrupa también por precio para separar los "lotes"
-        //    de un mismo material que tengan distinto precio ──────────────────
+        // ── Consulta: ahora se agrupa también por precio, para poder separar
+        //    los "lotes" de un mismo material que tengan distinto precio ────────
         $rows = DB::select("
     WITH movimientos AS (
 
@@ -1702,21 +1699,32 @@ class ReportesController extends Controller
     ORDER BY codigo, descripcion, precio
 ", [
             // saldo_inicial_cant
-            $s,
+            $start->toDateString(),
+
             // entradas_mes_cant
-            $s, $e,
+            $start->toDateString(), $end->toDateString(),
+
             // salidas_mes_cant
-            $s, $e,
+            $start->toDateString(), $end->toDateString(),
+
             // saldo_final_cant
-            $s, $s, $e, $s, $e,
+            $start->toDateString(),
+            $start->toDateString(), $end->toDateString(),
+            $start->toDateString(), $end->toDateString(),
+
             // saldo_inicial_money
-            $s,
+            $start->toDateString(),
+
             // entradas_mes_money
-            $s, $e,
+            $start->toDateString(), $end->toDateString(),
+
             // salidas_mes_money
-            $s, $e,
+            $start->toDateString(), $end->toDateString(),
+
             // saldo_final_money
-            $s, $s, $e, $s, $e,
+            $start->toDateString(),
+            $start->toDateString(), $end->toDateString(),
+            $start->toDateString(), $end->toDateString(),
         ]);
 
         $rows = array_values(array_filter($rows, function ($r) {
@@ -1728,7 +1736,8 @@ class ReportesController extends Controller
             return !($inicial == 0 && $entradas == 0 && $salidas == 0 && $final == 0);
         }));
 
-        // ── Totales generales y por código ───────────────────────────────────
+        // ── Totales generales (sin cambios: la suma total no varía por separar
+        //    los lotes por precio) ──────────────────────────────────────────────
         $totales = [
             'inicial_cant'   => 0,
             'entradas_cant'  => 0,
@@ -1778,7 +1787,8 @@ class ReportesController extends Controller
             $sumPorCodigo[$codigo]['final_money']    += (float) ($r->saldo_final_money   ?? 0);
         }
 
-        // ── Agrupar filas por material (lotes por precio) ────────────────────
+        // ── Agrupar filas por material, para poder ocultar código/descripción
+        //    repetidos y calcular subtotal cuando hay más de un lote ────────────
         $porMaterial = [];
 
         foreach ($rows as $r) {
@@ -1817,7 +1827,7 @@ class ReportesController extends Controller
                     <img src='{$logoalcaldia}' style='height:38px'>
                 </td>
                 <td style='width:70%; text-align:left; color:#104e8c; font-size:13px; font-weight:bold; line-height:1.3;'>
-                    REPORTE DE INVENTARIO
+                    REPORTE DE MOVIMIENTO DE INVENTARIO
                 </td>
             </tr>
         </table>
@@ -1833,7 +1843,7 @@ class ReportesController extends Controller
             </tr>
             <tr>
                 <td style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Versión:</strong></td>
-                <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'>000</td>
+                <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'></td>
             </tr>
             <tr>
                 <td style='border-right:0.8px solid #000; padding:4px 6px;'><strong>Fecha de vigencia:</strong></td>
@@ -1853,7 +1863,7 @@ class ReportesController extends Controller
             $mpdf->WriteHTML($stylesheet, \Mpdf\HTMLParserMode::HEADER_CSS);
         }
 
-        // Fondo para filas de lote repetido (mismo material)
+        // ── Estilos para filas de lote repetido (mismo material) ────────────────
         $tdLote = "background:#f7f9fd;";
 
         // ── Tabla principal ───────────────────────────────────────────────────
@@ -1912,15 +1922,16 @@ class ReportesController extends Controller
                 $sub['final_money']    += (float) ($r->saldo_final_money   ?? 0);
 
                 $esLoteExtra = !$esPrimero;
-                $bgStyle     = $esLoteExtra ? $tdLote : '';
-                $tdBase      = "style='{$bgStyle} text-align:right'";
+                $bg          = $esLoteExtra ? "style='{$tdLote}'" : '';
 
                 if (!$esLoteExtra) {
                     $celdaNum  = "<td>{$i}</td>";
                     $celdaCod  = "<td>" . e($grupo['codigo']) . "</td>";
                     $celdaDesc = "<td>" . e($grupo['descripcion']) . "</td>";
                 } else {
-                    $celdaNum = $celdaCod = $celdaDesc = "<td style='{$tdLote}'></td>";
+                    $celdaNum  = "<td {$bg}></td>";
+                    $celdaCod  = "<td {$bg}></td>";
+                    $celdaDesc = "<td {$bg}></td>";
                 }
 
                 $html .= "
@@ -1928,15 +1939,15 @@ class ReportesController extends Controller
     {$celdaNum}
     {$celdaCod}
     {$celdaDesc}
-    <td {$tdBase}>$" . number_format($r->precio ?? 0, 4) . "</td>
-    <td {$tdBase}>" . number_format($r->saldo_inicial_cant ?? 0) . "</td>
-    <td {$tdBase}>$" . number_format($r->saldo_inicial_money ?? 0, 2) . "</td>
-    <td {$tdBase}>" . number_format($r->entradas_mes_cant ?? 0) . "</td>
-    <td {$tdBase}>$" . number_format($r->entradas_mes_money ?? 0, 2) . "</td>
-    <td {$tdBase}>" . number_format($r->salidas_mes_cant ?? 0) . "</td>
-    <td {$tdBase}>$" . number_format($r->salidas_mes_money ?? 0, 2) . "</td>
-    <td {$tdBase}>" . number_format($r->saldo_final_cant ?? 0) . "</td>
-    <td {$tdBase}>$" . number_format($r->saldo_final_money ?? 0, 2) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>$" . number_format($r->precio ?? 0, 4) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>" . number_format($r->saldo_inicial_cant ?? 0) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>$" . number_format($r->saldo_inicial_money ?? 0, 2) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>" . number_format($r->entradas_mes_cant ?? 0) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>$" . number_format($r->entradas_mes_money ?? 0, 2) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>" . number_format($r->salidas_mes_cant ?? 0) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>$" . number_format($r->salidas_mes_money ?? 0, 2) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>" . number_format($r->saldo_final_cant ?? 0) . "</td>
+    <td {$bg} style='" . ($esLoteExtra ? "{$tdLote} " : '') . "text-align:right'>$" . number_format($r->saldo_final_money ?? 0, 2) . "</td>
 </tr>
 ";
 
@@ -2043,21 +2054,21 @@ class ReportesController extends Controller
 ";
 
             $j = 1;
-            foreach ($sumPorCodigo as $sc) {
-                $totalSaldoFinalCodigos += (float) $sc['final_money'];
+            foreach ($sumPorCodigo as $s) {
+                $totalSaldoFinalCodigos += (float) $s['final_money'];
 
                 $html .= "
     <tr>
         <td>{$j}</td>
-        <td>" . e($sc['codigo']) . "</td>
-        <td style='text-align:right'>" . number_format($sc['inicial_cant']) . "</td>
-        <td style='text-align:right'>$" . number_format($sc['inicial_money'], 2) . "</td>
-        <td style='text-align:right'>" . number_format($sc['entradas_cant']) . "</td>
-        <td style='text-align:right'>$" . number_format($sc['entradas_money'], 2) . "</td>
-        <td style='text-align:right'>" . number_format($sc['salidas_cant']) . "</td>
-        <td style='text-align:right'>$" . number_format($sc['salidas_money'], 2) . "</td>
-        <td style='text-align:right'>" . number_format($sc['final_cant']) . "</td>
-        <td style='text-align:right'>$" . number_format($sc['final_money'], 2) . "</td>
+        <td>" . e($s['codigo']) . "</td>
+        <td style='text-align:right'>" . number_format($s['inicial_cant']) . "</td>
+        <td style='text-align:right'>$" . number_format($s['inicial_money'], 2) . "</td>
+        <td style='text-align:right'>" . number_format($s['entradas_cant']) . "</td>
+        <td style='text-align:right'>$" . number_format($s['entradas_money'], 2) . "</td>
+        <td style='text-align:right'>" . number_format($s['salidas_cant']) . "</td>
+        <td style='text-align:right'>$" . number_format($s['salidas_money'], 2) . "</td>
+        <td style='text-align:right'>" . number_format($s['final_cant']) . "</td>
+        <td style='text-align:right'>$" . number_format($s['final_money'], 2) . "</td>
     </tr>
 ";
                 $j++;
@@ -2073,70 +2084,55 @@ class ReportesController extends Controller
 ";
         }
 
-        // ── Firmas ────────────────────────────────────────────────────────────
-        $info        = InformacionGeneral::find(1);
-        $pxFirmas    = (int)  ($info->px_firmas ?? 60);
-        $saltoPagina = (bool) ($info->salto_pagina ?? false);
-        $margenMm    = max(1, (int) round($pxFirmas * 0.264583));
+        // ── Firma (3 bloques) ─────────────────────────────────────────────────
+        $informacionGeneral = InformacionGeneral::where('id', 1)->first();
+        $margenFirma  = (int)  ($informacionGeneral->px_firmas ?? 40);
+        $saltoPagina  = (bool) ($informacionGeneral->salto_pagina ?? false);
 
-        if ($saltoPagina) {
-            $html .= '<pagebreak />';
-        }
+        $estiloSalto = $saltoPagina ? "page-break-before: always;" : "";
 
-        // Espaciador (mPDF no respeta margin-top de forma confiable)
-        $html .= "<div style='height:{$margenMm}mm; line-height:{$margenMm}mm; font-size:1px;'>&nbsp;</div>";
-
-        // Bloque 1: Control / Bodeguero
         $html .= "
-<table width='100%' style='font-family:Arial, sans-serif; border-collapse:collapse; text-align:center;'>
-    <tr>
-        <td width='40%' style='padding-bottom:4px;'>________________________________</td>
-        <td width='20%'></td>
-        <td width='40%' style='padding-bottom:4px;'>________________________________</td>
-    </tr>
-    <tr>
-        <td style='font-size:13px; padding-top:6px;'>" . e($info->control_nombre ?? '') . "</td>
-        <td></td>
-        <td style='font-size:13px; padding-top:6px;'>" . e($info->control_nombre_bodeguero ?? '') . "</td>
-    </tr>
-    <tr>
-        <td style='font-size:13px; font-weight:bold;'>" . e($info->control_cargo ?? '') . "</td>
-        <td></td>
-        <td style='font-size:13px; font-weight:bold;'>" . e($info->control_cargo_bodeguero ?? '') . "</td>
-    </tr>
-</table>
-";
-
-        // Bloque 2: 3 firmas del reporte (solo si hay datos)
-        $hayFirmasReporte = ($info->nombre_reporte ?? '') !== ''
-            || ($info->nombre_reporte2 ?? '') !== ''
-            || ($info->nombre_reporte3 ?? '') !== '';
-
-        if ($hayFirmasReporte) {
-            $html .= "
-<br><br>
-<table width='100%' style='font-family:Arial, sans-serif; border-collapse:collapse; text-align:center;'>
-    <tr>
-        <td width='33%'>F._____________________________</td>
-        <td width='33%'>F._____________________________</td>
-        <td width='33%'>F._____________________________</td>
-    </tr>
-    <tr>
-        <td style='padding-top:20px; font-size:12px;'>" . e($info->nombre_reporte ?? '') . "</td>
-        <td style='padding-top:20px; font-size:12px;'>" . e($info->nombre_reporte2 ?? '') . "</td>
-        <td style='padding-top:20px; font-size:12px;'>" . e($info->nombre_reporte3 ?? '') . "</td>
-    </tr>
-    <tr>
-        <td style='font-weight:bold; font-size:12px;'>" . e($info->cargo_reporte ?? '') . "</td>
-        <td style='font-weight:bold; font-size:12px;'>" . e($info->cargo_reporte2 ?? '') . "</td>
-        <td style='font-weight:bold; font-size:12px;'>" . e($info->cargo_reporte3 ?? '') . "</td>
-    </tr>
-</table>
-";
-        }
+    <div style='{$estiloSalto} padding-top:{$margenFirma}px;'>
+        <table width='100%' style='font-size:12px; text-align:center; border-collapse:collapse;'>
+            <tr>
+                <td style='width:33%; text-align:center; padding-bottom:0;'>F._____________________________</td>
+                <td style='width:33%; text-align:center; padding-bottom:0;'>F._____________________________</td>
+                <td style='width:33%; text-align:center; padding-bottom:0;'>F._____________________________</td>
+            </tr>
+            <tr>
+                <td style='width:33%; text-align:center;  padding-top:20px; font-size:12px;'>
+                    {$informacionGeneral->nombre_reporte}
+                </td>
+                <td style='width:33%; text-align:center;  padding-top:20px; font-size:12px;'>
+                    {$informacionGeneral->nombre_reporte2}
+                </td>
+                <td style='width:33%; text-align:center;  padding-top:20px; font-size:12px;'>
+                    {$informacionGeneral->nombre_reporte3}
+                </td>
+            </tr>
+            <tr>
+                <td style='width:33%; text-align:center; font-weight:bold; font-size:12px;'>
+                    {$informacionGeneral->cargo_reporte}
+                </td>
+                <td style='width:33%; text-align:center; font-weight:bold; font-size:12px;'>
+                    {$informacionGeneral->cargo_reporte2}
+                </td>
+                <td style='width:33%; text-align:center; font-weight:bold; font-size:12px;'>
+                    {$informacionGeneral->cargo_reporte3}
+                </td>
+            </tr>
+        </table>
+    </div>
+    ";
 
         $mpdf->setFooter('Página {PAGENO} de {nb}');
         $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
-        $mpdf->Output('reporte_inventario.pdf', \Mpdf\Output\Destination::INLINE);
+        $mpdf->Output();
     }
+
+
+
+
+
+
 }
