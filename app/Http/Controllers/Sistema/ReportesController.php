@@ -2089,7 +2089,7 @@ class ReportesController extends Controller
         // ── Firma ─────────────────────────────────────────────────────────────
 
         // ── Config firmas ────────────────────────────────────────────────────
-        $infoGeneral = \App\Models\InformacionGeneral::find(1);
+        $infoGeneral = InformacionGeneral::find(1);
         $pxFirmas    = (int) ($infoGeneral->px_firmas ?? 60);
         $saltoPagina = (bool) ($infoGeneral->salto_pagina ?? false);
         $margenMm    = round($pxFirmas * 0.264583);
@@ -2155,9 +2155,9 @@ class ReportesController extends Controller
 
 
 
+
         $mpdf->setFooter('Página {PAGENO} de {nb}');
         $mpdf->WriteHTML($html, \Mpdf\HTMLParserMode::HTML_BODY);
-        $mpdf->Output();
     }
 
 }
