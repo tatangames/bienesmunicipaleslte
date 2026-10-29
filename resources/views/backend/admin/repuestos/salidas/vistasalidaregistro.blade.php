@@ -649,7 +649,17 @@
                             confirmButtonColor: '#d33',
                             confirmButtonText: 'Entendido'
                         });
-                    } else {
+                    }
+                    else if (response.data.success === 3) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Fecha inválida',
+                            html: `Fila <b>${response.data.fila}</b> (<b>${response.data.nombre_material}</b>):<br>
+                           la fecha de salida (<b>${response.data.fecha_salida}</b>) no puede ser menor
+                           a la fecha de entrada (<b>${response.data.fecha_entrada}</b>).`
+                                    });
+                    }
+                    else {
                         toastr.error('Error al guardar');
                     }
                 })

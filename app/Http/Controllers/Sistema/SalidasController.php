@@ -136,6 +136,9 @@ class SalidasController extends Controller
     }
 
 
+
+
+
     public function guardarSalida(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -163,6 +166,8 @@ class SalidasController extends Controller
             $agrupado[$id]['observacion']  = $item['observacion'] ?? '';
         }
 
+        $fechaSalida = \Carbon\Carbon::parse($request->fecha)->startOfDay();
+
         DB::beginTransaction();
 
         try {
@@ -170,7 +175,9 @@ class SalidasController extends Controller
 
             foreach ($agrupado as $idEntradaDetalle => $datos) {
 
-                $disponible = DB::table('entradas_detalle as ed')
+                $info = DB::table('entradas_detalle as ed')
+                    ->join('entradas as e', 'e.id', '=', 'ed.id_entradas')
+                    ->join('materiales as m', 'm.id', '=', 'ed.id_material')
                     ->leftJoin(
                         DB::raw('(
                         SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
@@ -180,23 +187,48 @@ class SalidasController extends Controller
                         'sd.id_entrada_detalle', '=', 'ed.id'
                     )
                     ->where('ed.id', $idEntradaDetalle)
-                    ->selectRaw('(ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible')
-                    ->value('disponible');
+                    ->selectRaw('
+                    (ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible,
+                    e.fecha as fecha_entrada,
+                    m.nombre as nombre_material
+                ')
+                    ->first();
 
-                if (is_null($disponible) || $datos['cantidad'] > $disponible) {
+                // Item no encontrado
+                if (!$info) {
                     DB::rollback();
-
-                    $nombreMaterial = DB::table('entradas_detalle as ed')
-                        ->join('materiales as m', 'm.id', '=', 'ed.id_material')
-                        ->where('ed.id', $idEntradaDetalle)
-                        ->value('m.nombre');
-
                     return [
-                        'success'          => 2,
-                        'fila'             => $fila,
-                        'nombre_material'  => $nombreMaterial ?? 'Material desconocido',
-                        'cantidad_pedida'  => $datos['cantidad'],
-                        'disponible'       => (int)$disponible,
+                        'success'         => 2,
+                        'fila'            => $fila,
+                        'nombre_material' => 'Material desconocido',
+                        'cantidad_pedida' => $datos['cantidad'],
+                        'disponible'      => 0,
+                    ];
+                }
+
+                // Validar que la fecha de salida no sea menor a la fecha de entrada
+                $fechaEntrada = \Carbon\Carbon::parse($info->fecha_entrada)->startOfDay();
+
+                if ($fechaSalida->lt($fechaEntrada)) {
+                    DB::rollback();
+                    return [
+                        'success'         => 3,
+                        'fila'            => $fila,
+                        'nombre_material' => $info->nombre_material ?? 'Material desconocido',
+                        'fecha_entrada'   => $fechaEntrada->format('d/m/Y'),
+                        'fecha_salida'    => $fechaSalida->format('d/m/Y'),
+                    ];
+                }
+
+                // Validar disponibilidad
+                if ($datos['cantidad'] > $info->disponible) {
+                    DB::rollback();
+                    return [
+                        'success'         => 2,
+                        'fila'            => $fila,
+                        'nombre_material' => $info->nombre_material ?? 'Material desconocido',
+                        'cantidad_pedida' => $datos['cantidad'],
+                        'disponible'      => (int)$info->disponible,
                     ];
                 }
 
@@ -219,17 +251,17 @@ class SalidasController extends Controller
             $salida->nombre_firma_2  = $infoGeneral->nombre_firma_2;
             $salida->nombre_firma_3  = $infoGeneral->nombre_firma_3;
             $salida->nombre_firma_4  = $infoGeneral->nombre_firma_4;
-            $salida->encabezado = $infoGeneral->encabezado;
-            $salida->pie_pagina = $infoGeneral->pie_pagina;
+            $salida->encabezado      = $infoGeneral->encabezado;
+            $salida->pie_pagina      = $infoGeneral->pie_pagina;
             $salida->save();
 
             // Guardar detalle
             foreach ($agrupado as $idEntradaDetalle => $datos) {
-                $detalle                      = new SalidasDetalle();
-                $detalle->id_salida           = $salida->id;
-                $detalle->id_entrada_detalle  = $idEntradaDetalle;
-                $detalle->cantidad_salida     = $datos['cantidad'];
-                $detalle->observaciones       = $datos['observacion'];
+                $detalle                     = new SalidasDetalle();
+                $detalle->id_salida          = $salida->id;
+                $detalle->id_entrada_detalle = $idEntradaDetalle;
+                $detalle->cantidad_salida    = $datos['cantidad'];
+                $detalle->observaciones      = $datos['observacion'];
                 $detalle->save();
             }
 
@@ -242,8 +274,6 @@ class SalidasController extends Controller
             return ['success' => 99];
         }
     }
-
-
 
 
 
