@@ -155,49 +155,44 @@ class RepuestosController extends Controller
     }
 
 
-    public function buscadorMaterial(Request $request){
-
-        if($request->get('query')){
+    public function buscadorMaterial(Request $request)
+    {
+        if ($request->get('query')) {
             $query = $request->get('query');
-            $data = Materiales::where('nombre', 'LIKE', "%{$query}%")
+
+            $data = Materiales::with('unidadMedida')
+                ->where('nombre', 'LIKE', "%{$query}%")
                 ->get();
 
-            foreach ($data as $dd){
-                if($info = UnidadMedida::where('id', $dd->id_medida)->first()){
-                    $dd->medida = "- " . $info->nombre;
-                }else{
-                    $dd->medida = "";
-                }
-            }
-
             $output = '<ul class="dropdown-menu" style="display:block; position:relative;">';
-            $tiene = true;
-            foreach($data as $row){
+            $tiene  = true;
+            $total  = count($data);
 
-                // si solo hay 1 fila, No mostrara el hr, salto de linea
-                if(count($data) == 1){
-                    if(!empty($row)){
-                        $tiene = false;
-                        $output .= '
-                 <li onclick="modificarValor(this)" id="'.$row->id.'"><a href="#" style="margin-left: 3px">'.$row->nombre . '  ' .$row->medida .'</a></li>
-                ';
-                    }
-                }
+            foreach ($data as $row) {
+                $tiene = false;
 
-                else{
-                    if(!empty($row)){
-                        $tiene = false;
-                        $output .= '
-                 <li onclick="modificarValor(this)" id="'.$row->id.'"><a href="#" style="margin-left: 3px">'.$row->nombre . ' ' .$row->medida .'</a></li>
-                   <hr>
-                ';
-                    }
+                $medida = $row->unidadMedida ? '- ' . $row->unidadMedida->nombre : '';
+                $marca  = !empty($row->marca) ? '| Marca: ' . $row->marca : '';
+
+                $texto = trim($row->nombre . ' ' . $medida . ' ' . $marca);
+
+                $output .= '
+                <li onclick="modificarValor(this)" id="' . $row->id . '">
+                    <a href="#" style="margin-left: 3px">' . e($texto) . '</a>
+                </li>';
+
+                // Si solo hay 1 fila no se muestra el hr
+                if ($total > 1) {
+                    $output .= '<hr>';
                 }
             }
+
             $output .= '</ul>';
-            if($tiene){
+
+            if ($tiene) {
                 $output = '';
             }
+
             echo $output;
         }
     }
