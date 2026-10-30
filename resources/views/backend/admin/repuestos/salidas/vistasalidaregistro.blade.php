@@ -266,7 +266,7 @@
                                             <th>Detalle</th>
                                             <th>Precio</th>
                                             <th>Cant. Actual</th>
-                                            <th>Cant. Salida</th>
+                                            <th>Cant. Salida (máx. 2 decimales)</th>
                                         </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -353,6 +353,16 @@
     <script>
         var seguroBuscador = true;
 
+        // ── Configuración de decimales (cantidad decimal 8,2) ───────
+        var DECIMALES_CANTIDAD = 2;
+        var CANTIDAD_MAX       = 999999.99;
+        var reglaCantidad      = /^([0-9]+\.?[0-9]{0,2})$/;
+
+        // Comparar en centavos para evitar errores de coma flotante
+        function aCentavos(valor) {
+            return Math.round(parseFloat(valor) * 100);
+        }
+
         $(function () {
             var hoy = new Date();
             document.getElementById('fecha').value = hoy.toJSON().slice(0, 10);
@@ -412,10 +422,11 @@
                             '<td><input disabled value="' + val.fechaIngreso + '" class="form-control form-control-sm" type="text"></td>' +
                             '<td><input disabled value="' + (val.codigo ?? '') + '" class="form-control form-control-sm" type="text"></td>' +
                             '<td><input disabled value="' + val.precioFormat + '" class="form-control form-control-sm" type="text"></td>' +
-                            '<td><input disabled name="arrayCantidadActual[]" data-cantidadActualFila="' + val.cantidadActual + '" value="' + val.cantidadActual + '" class="form-control form-control-sm" type="number"></td>' +
+                            '<td><input disabled name="arrayCantidadActual[]" data-cantidadActualFila="' + val.cantidadActual + '" value="' + val.cantidadActual + '" class="form-control form-control-sm" type="text"></td>' +
                             '<td><input class="form-control form-control-sm" ' +
                             'data-idfilaentradadetalle="' + val.id + '" ' +
-                            'name="arrayCantidadSalida[]" min="0" max="' + val.cantidadActual + '" type="number" ' +
+                            'name="arrayCantidadSalida[]" min="0" max="' + val.cantidadActual + '" step="0.01" type="number" ' +
+                            'autocomplete="off" placeholder="0.00" ' +
                             'onkeydown="return validateInput(event);" ' +
                             'oninput="validateCantidadSalida(this, ' + val.cantidadActual + ');">' +
                             '</td>' +
@@ -445,14 +456,24 @@
                 var max = arrayCantidadActual[a];
 
                 if (fc !== '') {
-                    if (parseInt(fc) <= 0) {
+                    if (!fc.match(reglaCantidad)) {
+                        colorRojoMatriz(a);
+                        alertaMensaje('info', 'Error', 'Fila #' + (a + 1) + ': Cantidad inválida (máximo 2 decimales)');
+                        return;
+                    }
+                    if (aCentavos(fc) <= 0) {
                         colorRojoMatriz(a);
                         alertaMensaje('info', 'Error', 'Fila #' + (a + 1) + ': No se permite cero');
                         return;
                     }
+                    if (parseFloat(fc) > CANTIDAD_MAX) {
+                        colorRojoMatriz(a);
+                        alertaMensaje('info', 'Error', 'Fila #' + (a + 1) + ': Cantidad máximo 999,999.99');
+                        return;
+                    }
                     habraSalida = false;
                 }
-                if (fc !== '' && parseInt(fc) > parseInt(max)) {
+                if (fc !== '' && aCentavos(fc) > aCentavos(max)) {
                     colorRojoMatriz(a);
                     alertaMensaje('info', 'Error', 'Fila #' + (a + 1) + ': Supera cantidad actual');
                     return;
@@ -467,7 +488,9 @@
 
             for (var z = 0; z < arrayCantidadSalida.length; z++) {
                 var fc2 = arrayCantidadSalida[z];
-                if (fc2 !== '' && parseInt(fc2) > 0) {
+                if (fc2 !== '' && aCentavos(fc2) > 0) {
+                    // Normalizar a 2 decimales
+                    fc2 = parseFloat(fc2).toFixed(DECIMALES_CANTIDAD);
                     nFilas++;
                     var fila =
                         '<tr>' +
@@ -606,13 +629,12 @@
                 toastr.error('Agregue al menos un material'); return;
             }
 
-            var reglaEntero    = /^[0-9]\d*$/;
             var salidaCantidad = $("input[name='salidaArray[]']")
                 .map(function () { return $(this).attr('data-cantidadSalida'); }).get();
 
             for (var a = 0; a < salidaCantidad.length; a++) {
                 var ic = salidaCantidad[a];
-                if (!ic || !ic.match(reglaEntero) || parseInt(ic) <= 0) {
+                if (!ic || !ic.match(reglaCantidad) || aCentavos(ic) <= 0 || parseFloat(ic) > CANTIDAD_MAX) {
                     colorRojoTabla(a);
                     toastr.error('Fila #' + (a + 1) + ' — Cantidad inválida');
                     return;
@@ -657,7 +679,7 @@
                             html: `Fila <b>${response.data.fila}</b> (<b>${response.data.nombre_material}</b>):<br>
                            la fecha de salida (<b>${response.data.fecha_salida}</b>) no puede ser menor
                            a la fecha de entrada (<b>${response.data.fecha_entrada}</b>).`
-                                    });
+                        });
                     }
                     else {
                         toastr.error('Error al guardar');
@@ -699,16 +721,41 @@
             $('#matrizM tbody tr').css('background', 'white');
         }
 
+        // ── Teclado: permitir números y punto decimal ─────────────────
         function validateInput(event) {
             const key = event.key;
-            if (['Backspace','ArrowLeft','ArrowRight','Delete','Tab'].includes(key)) return true;
-            if (key === 'e' || key === 'E' || key === '-' || isNaN(Number(key))) return false;
+
+            // Atajos (Ctrl/Cmd + V, C, A, X)
+            if (event.ctrlKey || event.metaKey) return true;
+
+            if (['Backspace','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Tab','Home','End','Enter'].includes(key)) return true;
+
+            // Punto decimal (solo uno)
+            if (key === '.') {
+                return event.target.value.indexOf('.') === -1;
+            }
+
+            // Bloquear e, E, +, - y cualquier no numérico
+            if (key === 'e' || key === 'E' || key === '-' || key === '+' || isNaN(Number(key)) || key === ' ') return false;
             return true;
         }
 
+        // ── Tiempo real: máx. 2 decimales y máx. cantidad actual ──────
         function validateCantidadSalida(input, maxCantidad) {
-            input.value = input.value.replace(/[^0-9]/g, '');
-            if (Number(input.value) > maxCantidad) input.value = maxCantidad;
+            var v = input.value;
+
+            // Recortar a 2 decimales si el usuario escribe/pega más
+            var m = v.match(/^\d*\.?\d{0,2}/);
+            var limpio = m ? m[0] : '';
+
+            // No superar la cantidad actual disponible
+            if (limpio !== '' && aCentavos(limpio) > aCentavos(maxCantidad)) {
+                limpio = parseFloat(maxCantidad).toFixed(DECIMALES_CANTIDAD);
+            }
+
+            if (limpio !== v) {
+                input.value = limpio;
+            }
         }
     </script>
 @endsection

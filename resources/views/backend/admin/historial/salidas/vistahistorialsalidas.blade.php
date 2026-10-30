@@ -338,8 +338,9 @@
                         <p id="ec-label-material"  style="font-size:17px;"></p>
                     </div>
                     <div class="form-group">
-                        <label>Nueva cantidad <span class="text-danger">*</span></label>
-                        <input type="number" id="ec-cantidad" class="form-control" min="1">
+                        <label>Nueva cantidad (máx. 2 decimales) <span class="text-danger">*</span></label>
+                        <input type="number" id="ec-cantidad" class="form-control"
+                               min="0.01" max="999999.99" step="0.01" autocomplete="off" placeholder="0.00">
                     </div>
                     <div id="ec-error" class="text-danger" style="display:none; font-size:12px;"></div>
                 </div>
@@ -366,8 +367,11 @@
         var _salidaTituloActual   = '';
         var _seguroFiltroMaterial = true;
 
-        // ── Configuración de decimales para precios ─────────────────
-        var DECIMALES = 5;
+        // ── Configuración de decimales ──────────────────────────────
+        var DECIMALES = 5;                  // precios
+        var DECIMALES_CANTIDAD = 2;         // cantidad decimal(8,2)
+        var CANTIDAD_MAX = 999999.99;
+        var reglaCantidad = /^([0-9]+\.?[0-9]{0,2})$/;
 
         function formatoPrecio(valor) {
             var num = parseFloat(valor);
@@ -377,6 +381,32 @@
 
         $(function () {
             const ruta = "{{ url('/admin/historial/salidas/tabla') }}";
+
+            // ── Modal Editar Cantidad: validación en tiempo real ──
+            $('#ec-cantidad').on('keydown', function (ev) {
+                if (['e', 'E', '+', '-'].indexOf(ev.key) !== -1) {
+                    ev.preventDefault();
+                }
+            });
+
+            $('#ec-cantidad').on('input', function () {
+                var v = this.value;
+
+                // Recortar a 2 decimales si el usuario escribe/pega más
+                var m = v.match(/^\d*\.?\d{0,2}/);
+                var limpio = m ? m[0] : '';
+
+                // Respetar el máximo
+                if (limpio !== '' && parseFloat(limpio) > CANTIDAD_MAX) {
+                    limpio = this.dataset.ultimoValido || '';
+                }
+
+                if (limpio !== v) {
+                    this.value = limpio;
+                }
+
+                this.dataset.ultimoValido = this.value;
+            });
 
             function initDataTable() {
                 if ($.fn.DataTable.isDataTable('#tabla')) {
@@ -645,7 +675,7 @@
                                     <td class="text-center">
                                         <button type="button"
                                                 class="btn btn-warning btn-xs mr-1"
-                                                onclick="modalEditarCantidad(${fila.id}, ${fila.cantidad_salida}, '${fila.material}')">
+                                                onclick="modalEditarCantidad(${fila.id}, '${fila.cantidad_salida}', '${fila.material}')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button type="button"
@@ -681,6 +711,7 @@
         function modalEditarCantidad(id, cantidadActual, material) {
             $('#ec-id').val(id);
             $('#ec-cantidad').val(cantidadActual);
+            document.getElementById('ec-cantidad').dataset.ultimoValido = document.getElementById('ec-cantidad').value;
             $('#ec-label-material').text(material);
             $('#ec-error').hide().text('');
             $('#modalEditarCantidad').modal('show');
@@ -688,10 +719,14 @@
 
         function guardarCantidad() {
             const id       = $('#ec-id').val();
-            const cantidad = parseInt($('#ec-cantidad').val());
+            const cantidad = $('#ec-cantidad').val().trim();
 
-            if (!cantidad || cantidad < 1) {
-                $('#ec-error').text('Ingrese una cantidad válida mayor a 0').show();
+            if (cantidad === '' || !cantidad.match(reglaCantidad) || parseFloat(cantidad) <= 0) {
+                $('#ec-error').text('Ingrese una cantidad válida mayor a 0 (máximo 2 decimales)').show();
+                return;
+            }
+            if (parseFloat(cantidad) > CANTIDAD_MAX) {
+                $('#ec-error').text('Cantidad máximo 999,999.99').show();
                 return;
             }
 
@@ -700,7 +735,7 @@
 
             const formData = new FormData();
             formData.append('id',       id);
-            formData.append('cantidad', cantidad);
+            formData.append('cantidad', parseFloat(cantidad).toFixed(DECIMALES_CANTIDAD));
 
             axios.post(urlAdmin + '/admin/historial/salidas/editarcantidad', formData)
                 .then((response) => {

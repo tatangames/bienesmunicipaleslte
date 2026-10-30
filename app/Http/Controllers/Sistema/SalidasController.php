@@ -151,22 +151,36 @@ class SalidasController extends Controller
 
         $contenedor = json_decode($request->contenedorArray, true);
 
-        if (empty($contenedor)) {
+        if (empty($contenedor) || !is_array($contenedor)) {
             return ['success' => 0];
         }
 
-        // Agrupar por id_entrada_detalle, sumando cantidades y tomando la última observación
+        // Agrupar por id_entrada_detalle, sumando cantidades (en centavos, decimal 8,2)
+        // y tomando la última observación
         $agrupado = [];
         foreach ($contenedor as $item) {
+            if (!is_array($item)) {
+                return ['success' => 0];
+            }
+
+            $itemValidator = Validator::make($item, [
+                'infoIdEntradaDeta' => 'required|integer',
+                'infoCantidad'      => ['required', 'numeric', 'min:0.01', 'max:999999.99', 'regex:/^\d+(\.\d{1,2})?$/'],
+            ]);
+
+            if ($itemValidator->fails()) {
+                return ['success' => 0];
+            }
+
             $id = $item['infoIdEntradaDeta'];
             if (!isset($agrupado[$id])) {
-                $agrupado[$id] = ['cantidad' => 0, 'observacion' => ''];
+                $agrupado[$id] = ['centavos' => 0, 'observacion' => ''];
             }
-            $agrupado[$id]['cantidad']    += (int)$item['infoCantidad'];
+            $agrupado[$id]['centavos']    += (int) round((float) $item['infoCantidad'] * 100);
             $agrupado[$id]['observacion']  = $item['observacion'] ?? '';
         }
 
-        $fechaSalida = \Carbon\Carbon::parse($request->fecha)->startOfDay();
+        $fechaSalida = Carbon::parse($request->fecha)->startOfDay();
 
         DB::beginTransaction();
 
@@ -180,18 +194,18 @@ class SalidasController extends Controller
                     ->join('materiales as m', 'm.id', '=', 'ed.id_material')
                     ->leftJoin(
                         DB::raw('(
-                        SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
-                        FROM salidas_detalle
-                        GROUP BY id_entrada_detalle
-                    ) as sd'),
+                    SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
+                    FROM salidas_detalle
+                    GROUP BY id_entrada_detalle
+                ) as sd'),
                         'sd.id_entrada_detalle', '=', 'ed.id'
                     )
                     ->where('ed.id', $idEntradaDetalle)
                     ->selectRaw('
-                    (ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible,
-                    e.fecha as fecha_entrada,
-                    m.nombre as nombre_material
-                ')
+                (ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible,
+                e.fecha as fecha_entrada,
+                m.nombre as nombre_material
+            ')
                     ->first();
 
                 // Item no encontrado
@@ -201,13 +215,13 @@ class SalidasController extends Controller
                         'success'         => 2,
                         'fila'            => $fila,
                         'nombre_material' => 'Material desconocido',
-                        'cantidad_pedida' => $datos['cantidad'],
-                        'disponible'      => 0,
+                        'cantidad_pedida' => number_format($datos['centavos'] / 100, 2, '.', ''),
+                        'disponible'      => '0.00',
                     ];
                 }
 
                 // Validar que la fecha de salida no sea menor a la fecha de entrada
-                $fechaEntrada = \Carbon\Carbon::parse($info->fecha_entrada)->startOfDay();
+                $fechaEntrada = Carbon::parse($info->fecha_entrada)->startOfDay();
 
                 if ($fechaSalida->lt($fechaEntrada)) {
                     DB::rollback();
@@ -220,15 +234,17 @@ class SalidasController extends Controller
                     ];
                 }
 
-                // Validar disponibilidad
-                if ($datos['cantidad'] > $info->disponible) {
+                // Validar disponibilidad (comparación exacta en centavos)
+                $disponibleCentavos = (int) round(((float) $info->disponible) * 100);
+
+                if ($datos['centavos'] > $disponibleCentavos) {
                     DB::rollback();
                     return [
                         'success'         => 2,
                         'fila'            => $fila,
                         'nombre_material' => $info->nombre_material ?? 'Material desconocido',
-                        'cantidad_pedida' => $datos['cantidad'],
-                        'disponible'      => (int)$info->disponible,
+                        'cantidad_pedida' => number_format($datos['centavos'] / 100, 2, '.', ''),
+                        'disponible'      => number_format($disponibleCentavos / 100, 2, '.', ''),
                     ];
                 }
 
@@ -260,7 +276,7 @@ class SalidasController extends Controller
                 $detalle                     = new SalidasDetalle();
                 $detalle->id_salida          = $salida->id;
                 $detalle->id_entrada_detalle = $idEntradaDetalle;
-                $detalle->cantidad_salida    = $datos['cantidad'];
+                $detalle->cantidad_salida    = round($datos['centavos'] / 100, 2);
                 $detalle->observaciones      = $datos['observacion'];
                 $detalle->save();
             }

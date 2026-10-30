@@ -119,24 +119,24 @@
                                     </table>
                                 </div>
                                 <div class="form-group">
-                                    <label>Cantidad <span style="color:red">*</span></label>
+                                    <label>Cantidad (máx. 2 decimales) <span style="color:red">*</span></label>
                                     <div class="col-md-6">
-                                        <input type="number" id="cantidad" min="0" max="1000000"
-                                               class="form-control" autocomplete="off" placeholder="0">
+                                        <input type="number" id="cantidad" min="0.01" max="999999.99" step="0.01"
+                                               class="form-control" autocomplete="off" placeholder="0.00">
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label>Marca</label>
+                                    <label>Detalle (Opcional)</label>
                                     <div class="col-md-6">
                                         <input type="text" id="codigo" maxlength="100"
                                                class="form-control" autocomplete="off">
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label>Precio (4 decimales) <span style="color:red">*</span></label>
+                                    <label>Precio (5 decimales) <span style="color:red">*</span></label>
                                     <div class="col-md-3">
-                                    <input type="number" min="0" max="1000000" autocomplete="off"
-                                           class="form-control" id="precio-producto" placeholder="0.0000">
+                                        <input type="number" min="0" max="99999.99999" step="0.00001" autocomplete="off"
+                                               class="form-control" id="precio-producto" placeholder="0.00000">
                                     </div>
                                 </div>
                             </div>
@@ -202,17 +202,59 @@
         window.seguroBuscador = true;
         window.txtContenedorGlobal = null;
 
+        // ── Configuración de decimales ──────────────────────────────
+        var DECIMALES_CANTIDAD = 2;          // cantidad decimal(8,2)
+        var DECIMALES_PRECIO   = 5;          // precio decimal(10,5)
+        var CANTIDAD_MAX = 999999.99;
+        var PRECIO_MAX   = 99999.99999;
+        var reglaCantidad = /^([0-9]+\.?[0-9]{0,2})$/;
+        var reglaPrecio   = /^([0-9]+\.?[0-9]{0,5})$/;
+
+        // ── Validación en tiempo real (decimales y máximo) ──────────
+        function limitarDecimales(input, decimales, maximo) {
+            var v = input.value;
+
+            // Recortar a N decimales si el usuario escribe/pega más
+            var m = v.match(new RegExp('^\\d*\\.?\\d{0,' + decimales + '}'));
+            var limpio = m ? m[0] : '';
+
+            // Respetar el máximo
+            if (limpio !== '' && parseFloat(limpio) > maximo) {
+                limpio = input.dataset.ultimoValido || '';
+            }
+
+            if (limpio !== v) {
+                input.value = limpio;
+            }
+
+            input.dataset.ultimoValido = input.value;
+        }
+
+        function bloquearTeclasInvalidas(ev) {
+            if (['e', 'E', '+', '-'].indexOf(ev.key) !== -1) {
+                ev.preventDefault();
+            }
+        }
+
         $(document).ready(function () {
             $(document).click(function () { $(".droplista").hide(); });
-        });
 
-        document.getElementById('cantidad').addEventListener('keypress', function (e) {
-            if (e.key < '0' || e.key > '9') e.preventDefault();
+            $('#cantidad').on('keydown', bloquearTeclasInvalidas);
+            $('#cantidad').on('input', function () {
+                limitarDecimales(this, DECIMALES_CANTIDAD, CANTIDAD_MAX);
+            });
+
+            $('#precio-producto').on('keydown', bloquearTeclasInvalidas);
+            $('#precio-producto').on('input', function () {
+                limitarDecimales(this, DECIMALES_PRECIO, PRECIO_MAX);
+            });
         });
 
         function abrirModal() {
             document.getElementById("formulario-repuesto").reset();
             $('#repuesto').attr('data-info', '0');
+            $('#cantidad').removeAttr('data-ultimo-valido');
+            $('#precio-producto').removeAttr('data-ultimo-valido');
             $('#modalRepuesto').modal({ backdrop: 'static', keyboard: false });
         }
 
@@ -223,23 +265,32 @@
             var codigo        = document.getElementById('codigo').value;
             var precio        = document.getElementById('precio-producto').value;
 
-            var reglaEntero   = /^[0-9]\d*$/;
-            var reglaDecimal  = /^([0-9]+\.?[0-9]{0,10})$/;
-
             if (repuesto.dataset.info == 0) { toastr.error('Material es requerido'); return; }
             if (cantidad === '')            { toastr.error('Cantidad es requerida'); return; }
-            if (!cantidad.match(reglaEntero)) { toastr.error('Cantidad debe ser entero'); return; }
-            if (cantidad <= 0)              { toastr.error('Cantidad debe ser mayor a 0'); return; }
+            if (!cantidad.match(reglaCantidad) || parseFloat(cantidad) <= 0) {
+                toastr.error('Cantidad debe ser un número mayor a 0 (máximo 2 decimales)'); return;
+            }
+            if (parseFloat(cantidad) > CANTIDAD_MAX) {
+                toastr.error('Cantidad máximo 999,999.99'); return;
+            }
             if (precio === '')              { toastr.error('Precio es requerido'); return; }
-            if (!precio.match(reglaDecimal)){ toastr.error('Precio inválido'); return; }
-            if (precio < 0)                 { toastr.error('Precio no puede ser negativo'); return; }
+            if (!precio.match(reglaPrecio) || parseFloat(precio) < 0) {
+                toastr.error('Precio debe ser un número no negativo (máximo 5 decimales)'); return;
+            }
+            if (parseFloat(precio) > PRECIO_MAX) {
+                toastr.error('Precio máximo 99,999.99999'); return;
+            }
+
+            // Normalizar decimales
+            cantidad = parseFloat(cantidad).toFixed(DECIMALES_CANTIDAD);
+            precio   = parseFloat(precio).toFixed(DECIMALES_PRECIO);
 
             var nFilas = $('#matriz > tbody > tr').length + 1;
 
             var markup = `<tr>
                 <td><p id="fila${nFilas}" class="form-control" style="max-width:65px">${nFilas}</p></td>
                 <td><input name="descripcionArray[]" disabled data-info="${repuesto.dataset.info}" value="${nomRepuesto}" class="form-control" type="text"></td>
-                <td><input name="cantidadArray[]" disabled value="${cantidad}" class="form-control" type="number"></td>
+                <td><input name="cantidadArray[]" disabled value="${cantidad}" class="form-control" type="text"></td>
                 <td><input name="codigoArray[]" disabled value="${codigo}" class="form-control" type="text"></td>
                 <td><input name="arrayPrecio[]" data-precio="${precio}" disabled value="$${precio}" class="form-control" type="text"></td>
                 <td><button type="button" class="btn btn-danger btn-block" onclick="borrarFila(this)">Borrar</button></td>
@@ -321,6 +372,15 @@
 
             const contenedorArray = [];
             for (var i = 0; i < cantidad.length; i++) {
+                if (!cantidad[i].match(reglaCantidad) || parseFloat(cantidad[i]) <= 0 || parseFloat(cantidad[i]) > CANTIDAD_MAX) {
+                    toastr.error('Fila #' + (i + 1) + ': cantidad inválida');
+                    return;
+                }
+                if (!arrayPrecio[i].match(reglaPrecio) || parseFloat(arrayPrecio[i]) < 0 || parseFloat(arrayPrecio[i]) > PRECIO_MAX) {
+                    toastr.error('Fila #' + (i + 1) + ': precio inválido');
+                    return;
+                }
+
                 contenedorArray.push({
                     idMaterial:   descripcionAtributo[i],
                     infoCantidad: cantidad[i],

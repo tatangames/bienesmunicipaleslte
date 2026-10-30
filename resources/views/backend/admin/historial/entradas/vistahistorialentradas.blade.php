@@ -237,22 +237,22 @@
                         </div>
                         <div class="form-group">
                             <label>
-                                Cantidad <span class="text-danger">*</span>
+                                Cantidad (máx. 2 decimales) <span class="text-danger">*</span>
                                 <small id="detalle-cantidad-aviso" class="text-danger ml-1" style="display:none;">
                                     (no editable — tiene salidas)
                                 </small>
                             </label>
                             <input type="number" id="detalle-cantidad-editar" class="form-control"
-                                   min="1" max="1000000" placeholder="0">
+                                   min="0.01" max="999999.99" step="0.01" autocomplete="off" placeholder="0.00">
                         </div>
                         <div class="form-group">
                             <label>Detalle <small class="text-muted">(Opcional)</small></label>
                             <input type="text" id="detalle-codigo-editar" autocomplete="off" class="form-control" maxlength="100">
                         </div>
                         <div class="form-group">
-                            <label>Precio unitario <span class="text-danger">*</span></label>
+                            <label>Precio unitario (máx. 5 decimales) <span class="text-danger">*</span></label>
                             <input type="number" id="detalle-precio-editar" class="form-control"
-                                   step="0.0001" min="0" placeholder="0.0000">
+                                   min="0" max="99999.99999" step="0.00001" autocomplete="off" placeholder="0.00000">
                         </div>
                     </form>
                 </div>
@@ -277,8 +277,53 @@
         var _entradaIdActual     = null;
         var _entradaTituloActual = '';
 
+        // ── Límites según la base de datos ──────────────────────────
+        var DECIMALES_CANTIDAD = 2;          // cantidad decimal(8,2)
+        var DECIMALES_PRECIO   = 5;          // precio decimal(10,5)
+        var CANTIDAD_MAX = 999999.99;
+        var PRECIO_MAX   = 99999.99999;
+        var reglaCantidad = /^([0-9]+\.?[0-9]{0,2})$/;
+        var reglaPrecio   = /^([0-9]+\.?[0-9]{0,5})$/;
+
+        // ── Validación en tiempo real (decimales y máximo) ──────────
+        function limitarDecimales(input, decimales, maximo) {
+            var v = input.value;
+
+            // Recortar a N decimales si el usuario escribe/pega más
+            var m = v.match(new RegExp('^\\d*\\.?\\d{0,' + decimales + '}'));
+            var limpio = m ? m[0] : '';
+
+            // Respetar el máximo
+            if (limpio !== '' && parseFloat(limpio) > maximo) {
+                limpio = input.dataset.ultimoValido || '';
+            }
+
+            if (limpio !== v) {
+                input.value = limpio;
+            }
+
+            input.dataset.ultimoValido = input.value;
+        }
+
+        function bloquearTeclasInvalidas(ev) {
+            if (['e', 'E', '+', '-'].indexOf(ev.key) !== -1) {
+                ev.preventDefault();
+            }
+        }
+
         $(function () {
             const ruta = "{{ url('/admin/historial/entradas/tabla') }}";
+
+            // ── Modal Editar Material: cantidad y precio ──
+            $('#detalle-cantidad-editar').on('keydown', bloquearTeclasInvalidas);
+            $('#detalle-cantidad-editar').on('input', function () {
+                limitarDecimales(this, DECIMALES_CANTIDAD, CANTIDAD_MAX);
+            });
+
+            $('#detalle-precio-editar').on('keydown', bloquearTeclasInvalidas);
+            $('#detalle-precio-editar').on('input', function () {
+                limitarDecimales(this, DECIMALES_PRECIO, PRECIO_MAX);
+            });
 
             function initDataTable() {
                 if ($.fn.DataTable.isDataTable('#tabla')) {
@@ -555,6 +600,10 @@
             $('#detalle-precio-editar').val(precio);
             $('#detalle-cantidad-editar').val(cantidad);
 
+            // Guardar último valor válido para la validación en tiempo real
+            document.getElementById('detalle-precio-editar').dataset.ultimoValido   = document.getElementById('detalle-precio-editar').value;
+            document.getElementById('detalle-cantidad-editar').dataset.ultimoValido = document.getElementById('detalle-cantidad-editar').value;
+
             if (tieneSalidas) {
                 $('#detalle-cantidad-editar').prop('disabled', true);
                 $('#detalle-cantidad-aviso').show();
@@ -570,14 +619,22 @@
             const id       = $('#detalle-id-editar').val();
             const codigo   = $('#detalle-codigo-editar').val().trim();
             const precio   = $('#detalle-precio-editar').val().trim();
-            const cantidad = $('#detalle-cantidad-editar').val();
+            const cantidad = $('#detalle-cantidad-editar').val().trim();
             const disabled = $('#detalle-cantidad-editar').prop('disabled');
 
-            if (precio === '' || isNaN(precio) || parseFloat(precio) < 0) {
-                toastr.error('Precio inválido'); return;
+            if (precio === '' || !precio.match(reglaPrecio) || parseFloat(precio) < 0) {
+                toastr.error('Precio debe ser un número no negativo (máximo 5 decimales)'); return;
             }
-            if (!disabled && (cantidad === '' || parseInt(cantidad) <= 0)) {
-                toastr.error('Cantidad debe ser mayor a 0'); return;
+            if (parseFloat(precio) > PRECIO_MAX) {
+                toastr.error('Precio máximo 99,999.99999'); return;
+            }
+            if (!disabled) {
+                if (cantidad === '' || !cantidad.match(reglaCantidad) || parseFloat(cantidad) <= 0) {
+                    toastr.error('Cantidad debe ser un número mayor a 0 (máximo 2 decimales)'); return;
+                }
+                if (parseFloat(cantidad) > CANTIDAD_MAX) {
+                    toastr.error('Cantidad máximo 999,999.99'); return;
+                }
             }
 
             openLoading();
@@ -586,7 +643,7 @@
             formData.append('codigo', codigo);
             formData.append('precio', precio);
             if (!disabled) {
-                formData.append('cantidad', cantidad);
+                formData.append('cantidad', parseFloat(cantidad).toFixed(DECIMALES_CANTIDAD));
             }
 
             axios.post(urlAdmin + '/admin/historial/entradas/detalle/editar', formData)

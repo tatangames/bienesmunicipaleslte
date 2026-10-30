@@ -143,15 +143,15 @@
                                 <div class="row">
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label>Cantidad <span class="text-danger">*</span></label>
-                                            <input type="number" id="cantidad" min="1" max="1000000"
-                                                   class="form-control" autocomplete="off" placeholder="0">
+                                            <label>Cantidad (máx. 2 decimales) <span class="text-danger">*</span></label>
+                                            <input type="number" id="cantidad" min="0.01" max="999999.99" step="0.01"
+                                                   class="form-control" autocomplete="off" placeholder="0.00">
                                         </div>
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>Precio (5 decimales) <span class="text-danger">*</span></label>
-                                            <input type="number" id="precio-producto" min="0" max="9000000"
+                                            <input type="number" id="precio-producto" min="0" max="99999.99999"
                                                    step="0.00001" class="form-control" autocomplete="off" placeholder="0.00000">
                                         </div>
                                     </div>
@@ -249,9 +249,12 @@
         var txtContenedorGlobal = null;
 
         // ── Configuración de decimales ──────────────────────────────
-        var DECIMALES = 5;
-        var reglaEntero  = /^[0-9]\d*$/;
-        var reglaDecimal = /^([0-9]+\.?[0-9]{0,5})$/;
+        var DECIMALES = 5;            // precio / subtotal
+        var DECIMALES_CANTIDAD = 2;   // cantidad (decimal 8,2)
+        var CANTIDAD_MAX = 999999.99;
+        var PRECIO_MAX   = 99999.99999;   // decimal(10,5)
+        var reglaCantidad = /^([0-9]+\.?[0-9]{0,2})$/;
+        var reglaDecimal  = /^([0-9]+\.?[0-9]{0,5})$/;
 
         $('#select-proveedor').select2({
             theme: 'bootstrap-5',
@@ -269,6 +272,60 @@
             // Cerrar droplista al click fuera
             $(document).click(function () {
                 $('.droplista').hide();
+            });
+
+            // ── Cantidad: bloquear teclas no válidas (e, E, +, -) ──
+            $('#cantidad').on('keydown', function (ev) {
+                if (['e', 'E', '+', '-'].indexOf(ev.key) !== -1) {
+                    ev.preventDefault();
+                }
+            });
+
+            // ── Cantidad: validar en tiempo real (máx. 2 decimales y máx. 999,999.99) ──
+            $('#cantidad').on('input', function () {
+                var v = this.value;
+
+                // Recortar a 2 decimales si el usuario escribe/pega más
+                var m = v.match(/^\d*\.?\d{0,2}/);
+                var limpio = m ? m[0] : '';
+
+                // Respetar el máximo
+                if (limpio !== '' && parseFloat(limpio) > CANTIDAD_MAX) {
+                    limpio = this.dataset.ultimoValido || '';
+                }
+
+                if (limpio !== v) {
+                    this.value = limpio;
+                }
+
+                this.dataset.ultimoValido = this.value;
+            });
+
+            // ── Precio: bloquear teclas no válidas (e, E, +, -) ──
+            $('#precio-producto').on('keydown', function (ev) {
+                if (['e', 'E', '+', '-'].indexOf(ev.key) !== -1) {
+                    ev.preventDefault();
+                }
+            });
+
+            // ── Precio: validar en tiempo real (máx. 5 decimales y máx. 99,999.99999) ──
+            $('#precio-producto').on('input', function () {
+                var v = this.value;
+
+                // Recortar a 5 decimales si el usuario escribe/pega más
+                var m = v.match(/^\d*\.?\d{0,5}/);
+                var limpio = m ? m[0] : '';
+
+                // Respetar el máximo
+                if (limpio !== '' && parseFloat(limpio) > PRECIO_MAX) {
+                    limpio = this.dataset.ultimoValido || '';
+                }
+
+                if (limpio !== v) {
+                    this.value = limpio;
+                }
+
+                this.dataset.ultimoValido = this.value;
             });
 
             // ── Preview de subtotal en tiempo real dentro del modal ──
@@ -315,18 +372,21 @@
             if (idMaterial == 0 || idMaterial === '') {
                 toastr.error('Seleccione un material de la lista'); return;
             }
-            if (cantidad === '' || !cantidad.match(reglaEntero) || parseInt(cantidad) <= 0) {
-                toastr.error('Cantidad debe ser un entero mayor a 0'); return;
+            if (cantidad === '' || !cantidad.match(reglaCantidad) || parseFloat(cantidad) <= 0) {
+                toastr.error('Cantidad debe ser un número mayor a 0 (máximo 2 decimales)'); return;
             }
-            if (parseInt(cantidad) > 1000000) {
-                toastr.error('Cantidad máximo 1 millón'); return;
+            if (parseFloat(cantidad) > CANTIDAD_MAX) {
+                toastr.error('Cantidad máximo 999,999.99'); return;
             }
             if (precio === '' || !precio.match(reglaDecimal) || parseFloat(precio) < 0) {
                 toastr.error('Precio debe ser un número decimal no negativo (máximo 5 decimales)'); return;
             }
-            if (parseFloat(precio) > 9000000) {
-                toastr.error('Precio máximo 9 millones'); return;
+            if (parseFloat(precio) > PRECIO_MAX) {
+                toastr.error('Precio máximo 99,999.99999'); return;
             }
+
+            // Normalizar cantidad a 2 decimales
+            cantidad = parseFloat(cantidad).toFixed(DECIMALES_CANTIDAD);
 
             var nFilas = $('#matriz tbody tr').length + 1;
             var subtotal = (parseFloat(cantidad) * parseFloat(precio)).toFixed(DECIMALES);
@@ -457,12 +517,12 @@
                     toastr.error('Fila #' + (i + 1) + ': material inválido');
                     valido = false; return;
                 }
-                if (!infoCantidad.match(reglaEntero) || parseInt(infoCantidad) <= 0) {
+                if (!infoCantidad.match(reglaCantidad) || parseFloat(infoCantidad) <= 0 || parseFloat(infoCantidad) > CANTIDAD_MAX) {
                     colorRojoTabla(i);
                     toastr.error('Fila #' + (i + 1) + ': cantidad inválida');
                     valido = false; return;
                 }
-                if (!infoPrecio.match(reglaDecimal) || parseFloat(infoPrecio) < 0) {
+                if (!infoPrecio.match(reglaDecimal) || parseFloat(infoPrecio) < 0 || parseFloat(infoPrecio) > PRECIO_MAX) {
                     colorRojoTabla(i);
                     toastr.error('Fila #' + (i + 1) + ': precio inválido');
                     valido = false; return;
@@ -483,6 +543,7 @@
             openLoading();
             axios.post(urlAdmin + '/admin/entradas/guardar', formData)
                 .then((response) => {
+
                     closeLoading();
                     if (response.data.success === 1) {
                         toastr.success('Registrado correctamente');

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->bigInteger('id_salida')->unsigned();
             $table->bigInteger('id_entrada_detalle')->unsigned();
-            $table->integer('cantidad_salida');
+            $table->decimal('cantidad_salida', 8,2 )->default(0);
 
             $table->string('observaciones', 200)->nullable();
 

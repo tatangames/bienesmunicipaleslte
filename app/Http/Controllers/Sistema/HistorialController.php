@@ -154,10 +154,11 @@ class HistorialController extends Controller
                     'nombre'           => $item->nombre ?? '',
                     'material'         => $item->material->nombre ?? '',
                     'unidad'           => $item->material->unidadMedida->nombre ?? '',
-                    'cantidad_inicial' => $item->cantidad_inicial,
+                    // 2 decimales, sin separador de miles
+                    'cantidad_inicial' => number_format((float) $item->cantidad_inicial, 2, '.', ''),
                     // 5 decimales, sin separador de miles
                     'precio'           => number_format((float) $item->precio, 5, '.', ''),
-                    'precio_raw'       => $item->precio,
+                    'precio_raw'       => number_format((float) $item->precio, 5, '.', ''),
                     'tiene_salidas'    => $tieneSalidas ? 1 : 0,
                 ];
             });
@@ -170,14 +171,22 @@ class HistorialController extends Controller
 
     public function editarDetalleEntrada(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'id'       => 'required|integer',
+            'codigo'   => 'nullable|string|max:100',
+            'precio'   => ['required', 'numeric', 'min:0', 'max:99999.99999', 'regex:/^\d+(\.\d{1,5})?$/'],
+            'cantidad' => ['nullable', 'numeric', 'min:0.01', 'max:999999.99', 'regex:/^\d+(\.\d{1,2})?$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => 3]);
+        }
+
         $detalle = EntradasDetalle::find($request->id);
 
         if (!$detalle) {
             return response()->json(['success' => 0]);
         }
-
-        $detalle->codigo = $request->codigo ?: null;
-        $detalle->precio = round((float) $request->precio, 5);
 
         // Actualizar cantidad solo si no tiene salidas
         if ($request->filled('cantidad')) {
@@ -188,9 +197,11 @@ class HistorialController extends Controller
                     'msg'     => 'No se puede modificar la cantidad porque este material ya tiene salidas registradas.',
                 ]);
             }
-            $detalle->cantidad_inicial = (int) $request->cantidad;
+            $detalle->cantidad_inicial = round((float) $request->cantidad, 2);
         }
 
+        $detalle->codigo = $request->codigo ?: null;
+        $detalle->precio = round((float) $request->precio, 5);
         $detalle->save();
 
         return response()->json(['success' => 1]);
@@ -240,15 +251,15 @@ class HistorialController extends Controller
 
     public function vistaExtrasEntrada($id)
     {
-        $entrada = Entradas::with('tipoproyecto')->find($id);
+        $entrada = Entradas::find($id);
 
-        if (!$entrada || $entrada->tipoproyecto->transferido == 1) {
-            return redirect()->route('admin.historial.entradas.index')
-                ->with('error', 'El proyecto está cerrado, no se pueden agregar extras');
+        if (!$entrada) {
+            return redirect()->route('admin.historial.entradas.index');
         }
 
         return view('backend.admin.historial.entradas.vistaextras', compact('entrada'));
     }
+
 
     public function guardarExtrasEntrada(Request $request)
     {
@@ -258,28 +269,54 @@ class HistorialController extends Controller
             return response()->json(['success' => 0]);
         }
 
-        // Verificar que el proyecto no esté cerrado
-        if ($entrada->tipoproyecto->transferido == 1) {
-            return response()->json(['success' => 1, 'mensaje' => 'El proyecto está cerrado']);
-        }
-
         $contenedor = json_decode($request->contenedorArray, true);
 
-        if (empty($contenedor)) {
+        if (empty($contenedor) || !is_array($contenedor)) {
             return response()->json(['success' => 0]);
         }
 
-        foreach ($contenedor as $item) {
-            EntradasDetalle::create([
-                'id_entradas' => $entrada->id,
-                'id_material' => $item['idMaterial'],
-                'cantidad_inicial' => $item['infoCantidad'],
-                'codigo' => $item['infoCodigo'] ?: null,
-                'precio' => $item['infoPrecio'],
+        // ── Validar cada fila ──
+        // cantidad decimal(8,2): máx 999,999.99 | precio decimal(10,5): máx 99,999.99999
+        foreach ($contenedor as $fila) {
+            if (!is_array($fila)) {
+                return response()->json(['success' => 0]);
+            }
+
+            $filaValidator = Validator::make($fila, [
+                'idMaterial'   => 'required|integer',
+                'infoCantidad' => ['required', 'numeric', 'min:0.01', 'max:999999.99', 'regex:/^\d+(\.\d{1,2})?$/'],
+                'infoPrecio'   => ['required', 'numeric', 'min:0', 'max:99999.99999', 'regex:/^\d+(\.\d{1,5})?$/'],
             ]);
+
+            if ($filaValidator->fails()) {
+                return response()->json(['success' => 0]);
+            }
         }
 
-        return response()->json(['success' => 2]);
+        DB::beginTransaction();
+
+        try {
+            foreach ($contenedor as $fila) {
+                $material = Materiales::find($fila['idMaterial']);
+
+                $detalle = new EntradasDetalle();
+                $detalle->id_entradas      = $entrada->id;
+                $detalle->id_material      = $fila['idMaterial'];
+                $detalle->cantidad_inicial = round((float) $fila['infoCantidad'], 2);
+                $detalle->precio           = $fila['infoPrecio'];
+                $detalle->codigo           = $fila['infoCodigo'] ?? null;
+                $detalle->nombre           = $material->nombre ?? '';
+                $detalle->save();
+            }
+
+            DB::commit();
+            return response()->json(['success' => 2]);
+
+        } catch (\Throwable $e) {
+            DB::rollback();
+            Log::error('guardarExtrasEntrada: ' . $e);
+            return response()->json(['success' => 99]);
+        }
     }
 
     //***** ========================================================================================= **********
@@ -416,13 +453,14 @@ class HistorialController extends Controller
         }
 
         $detalle = $salida->detalle()
-            ->with('entradaDetalle.material.unidadMedida') // <-- agregar aquí
+            ->with('entradaDetalle.material.unidadMedida')
             ->get()
             ->map(function ($item) {
                 return [
                     'id'              => $item->id,
                     'material'        => $item->entradaDetalle->material->nombre ?? '',
-                    'cantidad_salida' => $item->cantidad_salida,
+                    // 2 decimales, sin separador de miles
+                    'cantidad_salida' => number_format((float) $item->cantidad_salida, 2, '.', ''),
                     'unidad'          => $item->entradaDetalle->material->unidadMedida->nombre ?? '',
                     // 5 decimales, sin separador de miles
                     'precio'          => number_format((float) ($item->entradaDetalle->precio ?? 0), 5, '.', ''),
@@ -457,18 +495,31 @@ class HistorialController extends Controller
 
         $contenedor = json_decode($request->contenedorArray, true);
 
-        if (empty($contenedor)) {
+        if (empty($contenedor) || !is_array($contenedor)) {
             return response()->json(['success' => 0]);
         }
 
-        // ── Agrupar por id_entrada_detalle para sumar si viene el mismo lote dos veces ──
+        // ── Validar y agrupar por id_entrada_detalle (en centavos, decimal 8,2) ──
         $agrupado = [];
         foreach ($contenedor as $index => $item) {
+            if (!is_array($item)) {
+                return response()->json(['success' => 0]);
+            }
+
+            $itemValidator = Validator::make($item, [
+                'infoIdEntradaDeta' => 'required|integer',
+                'infoCantidad'      => ['required', 'numeric', 'min:0.01', 'max:999999.99', 'regex:/^\d+(\.\d{1,2})?$/'],
+            ]);
+
+            if ($itemValidator->fails()) {
+                return response()->json(['success' => 0]);
+            }
+
             $id = $item['infoIdEntradaDeta'];
             if (!isset($agrupado[$id])) {
-                $agrupado[$id] = ['cantidad' => 0, 'fila' => $index + 1];
+                $agrupado[$id] = ['centavos' => 0, 'fila' => $index + 1];
             }
-            $agrupado[$id]['cantidad'] += (int) $item['infoCantidad'];
+            $agrupado[$id]['centavos'] += (int) round((float) $item['infoCantidad'] * 100);
         }
 
         // ── Validar disponibilidad ──
@@ -486,30 +537,39 @@ class HistorialController extends Controller
             $totalSalido = SalidasDetalle::where('id_entrada_detalle', $entDetalle->id)
                 ->sum('cantidad_salida');
 
-            $disponible = $entDetalle->cantidad_inicial - $totalSalido;
+            $disponibleCentavos = (int) round(((float) $entDetalle->cantidad_inicial - (float) $totalSalido) * 100);
 
-            if ($datos['cantidad'] > $disponible) {
+            if ($datos['centavos'] > $disponibleCentavos) {
                 return response()->json([
                     'success'         => 2,
                     'fila'            => $datos['fila'],
                     'msg'             => 'Cantidad insuficiente.',
                     'nombre_material' => $entDetalle->material->nombre ?? 'Material desconocido',
-                    'cantidad_pedida' => $datos['cantidad'],
-                    'disponible'      => (int) $disponible,
+                    'cantidad_pedida' => number_format($datos['centavos'] / 100, 2, '.', ''),
+                    'disponible'      => number_format($disponibleCentavos / 100, 2, '.', ''),
                 ]);
             }
         }
 
-        // ── Guardar ──
-        foreach ($contenedor as $item) {
-            SalidasDetalle::create([
-                'id_salida'          => $salida->id,
-                'id_entrada_detalle' => $item['infoIdEntradaDeta'],
-                'cantidad_salida'    => (int) $item['infoCantidad'],
-            ]);
-        }
+        // ── Guardar (una sola vez por lote) ──
+        DB::beginTransaction();
+        try {
+            foreach ($agrupado as $idEntradaDeta => $datos) {
+                SalidasDetalle::create([
+                    'id_salida'          => $salida->id,
+                    'id_entrada_detalle' => $idEntradaDeta,
+                    'cantidad_salida'    => round($datos['centavos'] / 100, 2),
+                ]);
+            }
 
-        return response()->json(['success' => 10]);
+            DB::commit();
+            return response()->json(['success' => 10]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('guardarExtrasSalida: ' . $e->getMessage());
+            return response()->json(['success' => 99]);
+        }
     }
 
 
@@ -564,7 +624,7 @@ class HistorialController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'id'       => 'required|integer',
-            'cantidad' => 'required|integer|min:1',
+            'cantidad' => ['required', 'numeric', 'min:0.01', 'max:999999.99', 'regex:/^\d+(\.\d{1,2})?$/'],
         ]);
 
         if ($validator->fails()) {
@@ -581,26 +641,31 @@ class HistorialController extends Controller
         $disponibleReal = DB::table('entradas_detalle as ed')
             ->leftJoin(
                 DB::raw('(
-                SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
-                FROM salidas_detalle
-                WHERE id != ' . (int)$detalle->id . '
-                GROUP BY id_entrada_detalle
-            ) as sd'),
+            SELECT id_entrada_detalle, SUM(cantidad_salida) as total_salido
+            FROM salidas_detalle
+            WHERE id != ' . (int) $detalle->id . '
+            GROUP BY id_entrada_detalle
+        ) as sd'),
                 'sd.id_entrada_detalle', '=', 'ed.id'
             )
             ->where('ed.id', $detalle->id_entrada_detalle)
             ->selectRaw('(ed.cantidad_inicial - COALESCE(sd.total_salido, 0)) as disponible')
             ->value('disponible');
 
-        if (is_null($disponibleReal) || $request->cantidad > $disponibleReal) {
+        $pedidoCentavos     = (int) round((float) $request->cantidad * 100);
+        $disponibleCentavos = is_null($disponibleReal) ? null : (int) round(((float) $disponibleReal) * 100);
+
+        if (is_null($disponibleCentavos) || $pedidoCentavos > $disponibleCentavos) {
+            $maximo = number_format(($disponibleCentavos ?? 0) / 100, 2, '.', '');
+
             return response()->json([
                 'success'    => 2,
-                'disponible' => (int)$disponibleReal,
-                'mensaje'    => 'Cantidad supera el disponible. Máximo permitido: ' . (int)$disponibleReal,
+                'disponible' => $maximo,
+                'mensaje'    => 'Cantidad supera el disponible. Máximo permitido: ' . $maximo,
             ]);
         }
 
-        $detalle->cantidad_salida = $request->cantidad;
+        $detalle->cantidad_salida = round($pedidoCentavos / 100, 2);
         $detalle->save();
 
         return response()->json(['success' => 1]);

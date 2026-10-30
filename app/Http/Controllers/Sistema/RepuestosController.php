@@ -214,21 +214,35 @@ class RepuestosController extends Controller
             return ['success' => 0];
         }
 
+        $datosContenedor = json_decode($request->contenedorArray, true);
+
+        if (empty($datosContenedor) || !is_array($datosContenedor)) {
+            return ['success' => 0];
+        }
+
+        // ── Validar cada fila ──
+        // cantidad decimal(8,2): máx 999,999.99 | precio decimal(10,5): máx 99,999.99999
+        foreach ($datosContenedor as $fila) {
+            $filaValidator = Validator::make($fila, [
+                'idMaterial'   => 'required|integer',
+                'infoCantidad' => ['required', 'numeric', 'min:0.01', 'max:999999.99', 'regex:/^\d+(\.\d{1,2})?$/'],
+                'infoPrecio'   => ['required', 'numeric', 'min:0', 'max:99999.99999', 'regex:/^\d+(\.\d{1,5})?$/'],
+            ]);
+
+            if ($filaValidator->fails()) {
+                return ['success' => 0];
+            }
+        }
+
         DB::beginTransaction();
 
         try {
-            $datosContenedor = json_decode($request->contenedorArray, true);
-
-            if (empty($datosContenedor)) {
-                return ['success' => 0];
-            }
-
             // ── Cabecera ──
             $entrada = new Entradas();
-            $entrada->id_proveedor   = $request->id_proveedor;
-            $entrada->fecha          = $request->fecha;
-            $entrada->factura        = $request->factura;
-            $entrada->descripcion    = $request->descripcion;
+            $entrada->id_proveedor = $request->id_proveedor;
+            $entrada->fecha        = $request->fecha;
+            $entrada->factura      = $request->factura;
+            $entrada->descripcion  = $request->descripcion;
             $entrada->save();
 
             // ── Detalle ──
@@ -236,7 +250,7 @@ class RepuestosController extends Controller
                 $detalle = new EntradasDetalle();
                 $detalle->id_entradas      = $entrada->id;
                 $detalle->id_material      = $fila['idMaterial'];
-                $detalle->cantidad_inicial = $fila['infoCantidad'];
+                $detalle->cantidad_inicial = round((float) $fila['infoCantidad'], 2);
                 $detalle->precio           = $fila['infoPrecio'];
                 $detalle->codigo           = $fila['infoCodigo'];
                 $detalle->nombre           = $fila['infoNombre'];

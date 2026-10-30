@@ -12,7 +12,7 @@
                                 <th style="width:12%">Factura</th>
                                 <th style="width:18%">Proveedor</th>
                                 <th style="width:22%">Descripción</th>
-                                <th style="width:18%">Opciones</th>
+                                <th style="width:24%">Opciones</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -24,6 +24,12 @@
                                     <td>{{ $dato->proveedor_nombre }}</td>
                                     <td>{{ $dato->descripcion ?? '' }}</td>
                                     <td class="text-center">
+                                        <button type="button"
+                                                class="btn btn-success btn-xs"
+                                                style="margin:2px"
+                                                onclick="window.location.href='{{ url('/admin/historial/entradas/extras') }}/{{ $dato->id }}'">
+                                            <i class="fas fa-plus"></i> Extras
+                                        </button>
                                         <button type="button"
                                                 class="btn btn-info btn-xs"
                                                 style="margin:2px"
