@@ -164,6 +164,15 @@ class RepuestosController extends Controller
                 ->where('nombre', 'LIKE', "%{$query}%")
                 ->get();
 
+            // Última marca (codigo) registrada por material, en una sola consulta
+            $ultimasMarcas = EntradasDetalle::whereIn('id_material', $data->pluck('id'))
+                ->whereNotNull('codigo')
+                ->where('codigo', '!=', '')
+                ->orderByDesc('id')
+                ->get(['id_material', 'codigo'])
+                ->unique('id_material')
+                ->pluck('codigo', 'id_material');
+
             $output = '<ul class="dropdown-menu" style="display:block; position:relative;">';
             $tiene  = true;
             $total  = count($data);
@@ -172,7 +181,7 @@ class RepuestosController extends Controller
                 $tiene = false;
 
                 $medida = $row->unidadMedida ? '- ' . $row->unidadMedida->nombre : '';
-                $marca  = !empty($row->marca) ? '| Marca: ' . $row->marca : '';
+                $marca  = isset($ultimasMarcas[$row->id]) ? '| Marca: ' . $ultimasMarcas[$row->id] : '';
 
                 $texto = trim($row->nombre . ' ' . $medida . ' ' . $marca);
 
