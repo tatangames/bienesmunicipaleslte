@@ -160,18 +160,24 @@ class RepuestosController extends Controller
         if ($request->get('query')) {
             $query = $request->get('query');
 
-            $data = Materiales::with('unidadMedida')
-                ->where('nombre', 'LIKE', "%{$query}%")
-                ->get();
+            $data = Materiales::where('nombre', 'LIKE', "%{$query}%")->get();
 
             // Última marca (codigo) registrada por material, en una sola consulta
-            $ultimasMarcas = EntradasDetalle::whereIn('id_material', $data->pluck('id'))
-                ->whereNotNull('codigo')
-                ->where('codigo', '!=', '')
-                ->orderByDesc('id')
-                ->get(['id_material', 'codigo'])
-                ->unique('id_material')
-                ->pluck('codigo', 'id_material');
+            $ultimasMarcas = [];
+            if ($data->isNotEmpty()) {
+                $filas = \Illuminate\Support\Facades\DB::table('entradas_detalle')
+                    ->whereIn('id_material', $data->pluck('id'))
+                    ->whereNotNull('codigo')
+                    ->where('codigo', '!=', '')
+                    ->orderByDesc('id')
+                    ->get(['id_material', 'codigo']);
+
+                foreach ($filas as $f) {
+                    if (!isset($ultimasMarcas[$f->id_material])) {
+                        $ultimasMarcas[$f->id_material] = $f->codigo;
+                    }
+                }
+            }
 
             $output = '<ul class="dropdown-menu" style="display:block; position:relative;">';
             $tiene  = true;
@@ -180,7 +186,8 @@ class RepuestosController extends Controller
             foreach ($data as $row) {
                 $tiene = false;
 
-                $medida = $row->unidadMedida ? '- ' . $row->unidadMedida->nombre : '';
+                $info   = UnidadMedida::where('id', $row->id_medida)->first();
+                $medida = $info ? '- ' . $info->nombre : '';
                 $marca  = isset($ultimasMarcas[$row->id]) ? '| Marca: ' . $ultimasMarcas[$row->id] : '';
 
                 $texto = trim($row->nombre . ' ' . $medida . ' ' . $marca);
