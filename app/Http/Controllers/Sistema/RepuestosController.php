@@ -209,6 +209,12 @@ class RepuestosController extends Controller
                 $output = '';
             }
 
+            \Log::info('buscadorMaterial', [
+                'ids'    => $data->pluck('id')->all(),
+                'filas'  => $filas->toArray(),
+                'ultimos' => $ultimosCodigos,
+            ]);
+
             echo $output;
         }
     }
