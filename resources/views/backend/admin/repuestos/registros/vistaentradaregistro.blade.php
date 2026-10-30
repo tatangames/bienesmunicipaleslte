@@ -464,7 +464,8 @@
         }
 
         function modificarValor(edrop) {
-            var texto = $(edrop).text();
+            // Quita saltos de línea/espacios sobrantes del <li>
+            var texto = $(edrop).text().replace(/\s+/g, ' ').trim();
             var id    = edrop.id;
             $(txtContenedorGlobal).val(texto)
                 .attr('data-info', id)

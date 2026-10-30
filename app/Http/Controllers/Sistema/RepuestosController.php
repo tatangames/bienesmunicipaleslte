@@ -162,35 +162,31 @@ class RepuestosController extends Controller
 
             $data = Materiales::where('nombre', 'LIKE', "%{$query}%")->get();
 
-            // Último código registrado por material, en una sola consulta
-            $ultimosCodigos = [];
-            if ($data->isNotEmpty()) {
-                $filas = DB::table('entradas_detalle')
-                    ->whereIn('id_material', $data->pluck('id'))
-                    ->whereNotNull('codigo')
-                    ->where('codigo', '!=', '')
-                    ->orderByDesc('id')
-                    ->get(['id_material', 'codigo']);
-
-                foreach ($filas as $f) {
-                    if (!isset($ultimosCodigos[$f->id_material])) {
-                        $ultimosCodigos[$f->id_material] = $f->codigo;
-                    }
-                }
+            if ($data->isEmpty()) {
+                return;
             }
 
-            $output = '<ul class="dropdown-menu" style="display:block; position:relative;">';
-            $tiene  = true;
+            // Unidades de medida en una sola consulta
+            $medidas = UnidadMedida::whereIn('id', $data->pluck('id_medida'))
+                ->get()
+                ->keyBy('id');
+
             $total  = count($data);
+            $output = '<ul class="dropdown-menu" style="display:block; position:relative;">';
 
             foreach ($data as $row) {
-                $tiene = false;
+                $partes = [$row->nombre];
 
-                $info   = UnidadMedida::where('id', $row->id_medida)->first();
-                $medida = $info ? '- ' . $info->nombre : '';
-                $codigo = isset($ultimosCodigos[$row->id]) ? '| Código: ' . $ultimosCodigos[$row->id] : '';
+                if (!empty($row->codigo)) {
+                    $partes[] = $row->codigo;
+                }
 
-                $texto = trim($row->nombre . ' ' . $medida . ' ' . $codigo);
+                if (isset($medidas[$row->id_medida])) {
+                    $partes[] = $medidas[$row->id_medida]->nombre;
+                }
+
+                // Resultado: NOMBRE | CODIGO | UNIDAD
+                $texto = implode(' | ', $partes);
 
                 $output .= '
             <li onclick="modificarValor(this)" id="' . $row->id . '">
@@ -204,16 +200,6 @@ class RepuestosController extends Controller
             }
 
             $output .= '</ul>';
-
-            if ($tiene) {
-                $output = '';
-            }
-
-            \Log::info('buscadorMaterial', [
-                'ids'    => $data->pluck('id')->all(),
-                'filas'  => $filas->toArray(),
-                'ultimos' => $ultimosCodigos,
-            ]);
 
             echo $output;
         }

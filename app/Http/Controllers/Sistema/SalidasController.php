@@ -62,22 +62,38 @@ class SalidasController extends Controller
 
         if ($listado->isEmpty()) return '';
 
+        // Todos los materiales con su unidad en una sola consulta (evita N+1)
+        $infoMateriales = Materiales::with('unidadMedida')
+            ->whereIn('id', $listado->pluck('id_material'))
+            ->get()
+            ->keyBy('id');
+
         $output = '<ul class="dropdown-menu" style="display:block;position:relative;overflow:auto;max-height:300px;width:800px">';
 
         foreach ($listado as $row) {
-            $infoMaterial = Materiales::with('unidadMedida')->find($row->id_material);
+            $infoMaterial = $infoMateriales[$row->id_material] ?? null;
             if (!$infoMaterial) continue;
 
-            $nombreCompleto = $infoMaterial->nombre .
-                ' (' . optional($infoMaterial->unidadMedida)->nombre . ')';
+            // NOMBRE | CODIGO (marca) | UNIDAD
+            $partes = [$infoMaterial->nombre];
 
-            $output .= '
-            <li class="cursor-pointer" onclick="modificarValor(this)"
-                id="' . $row->id_material . '"
-                data-tipo="material">
-                ' . $nombreCompleto . ' — Disponible: ' . $row->disponible . '
-            </li>
-            <hr>';
+            if (!empty($infoMaterial->codigo)) {
+                $partes[] = $infoMaterial->codigo;
+            }
+
+            $unidad = optional($infoMaterial->unidadMedida)->nombre;
+            if (!empty($unidad)) {
+                $partes[] = $unidad;
+            }
+
+            $texto = implode(' | ', $partes) . ' — Disponible: ' . $row->disponible;
+
+            $output .= '<li class="cursor-pointer" onclick="modificarValor(this)"'
+                . ' id="' . $row->id_material . '"'
+                . ' data-tipo="material"'
+                . ' data-codigo="' . e($infoMaterial->codigo ?? '') . '">'
+                . e($texto)
+                . '</li><hr>';
         }
 
         $output .= '</ul>';

@@ -248,9 +248,13 @@
                                 <input type="hidden" id="info-medida-hidden">
 
                                 <div class="form-row mb-3">
-                                    <div class="col-md-9">
+                                    <div class="col-md-6">
                                         <label>Material</label>
                                         <input type="text" disabled class="form-control" id="info-material">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Marca</label>
+                                        <input type="text" disabled class="form-control" id="info-marca">
                                     </div>
                                     <div class="col-md-3">
                                         <label>U/M</label>
@@ -397,6 +401,9 @@
             openLoading();
             $('#matrizM tbody tr').remove();
 
+            // Marca viene del data-codigo del <li>
+            var marcaSeleccionada = edrop.getAttribute('data-codigo') || '';
+
             var formData = new FormData();
             formData.append('id', edrop.id);
 
@@ -412,6 +419,7 @@
 
                     $('#id-material-seleccionado').val(edrop.id);
                     $('#info-material').val(response.data.nombreMaterial);
+                    $('#info-marca').val(marcaSeleccionada);
                     $('#info-medida').val(response.data.nombreMedida);
                     // Guardar U/M en hidden para pasarla al detalle
                     $('#info-medida-hidden').val(response.data.nombreMedida);
@@ -482,7 +490,8 @@
 
             if (habraSalida) { toastr.error('Registre mínimo 1 salida'); return; }
 
-            var nombreTexto  = document.getElementById('info-material').value;
+            var marcaTexto  = document.getElementById('info-marca').value;
+            var nombreTexto = document.getElementById('info-material').value + (marcaTexto ? ' | ' + marcaTexto : '');
             var medidaTexto  = document.getElementById('info-medida-hidden').value;
             var nFilas       = $('#matriz tbody tr').length;
 
