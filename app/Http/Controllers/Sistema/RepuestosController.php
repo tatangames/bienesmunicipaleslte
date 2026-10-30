@@ -162,10 +162,10 @@ class RepuestosController extends Controller
 
             $data = Materiales::where('nombre', 'LIKE', "%{$query}%")->get();
 
-            // Última marca (codigo) registrada por material, en una sola consulta
-            $ultimasMarcas = [];
+            // Último código registrado por material, en una sola consulta
+            $ultimosCodigos = [];
             if ($data->isNotEmpty()) {
-                $filas = \Illuminate\Support\Facades\DB::table('entradas_detalle')
+                $filas = DB::table('entradas_detalle')
                     ->whereIn('id_material', $data->pluck('id'))
                     ->whereNotNull('codigo')
                     ->where('codigo', '!=', '')
@@ -173,8 +173,8 @@ class RepuestosController extends Controller
                     ->get(['id_material', 'codigo']);
 
                 foreach ($filas as $f) {
-                    if (!isset($ultimasMarcas[$f->id_material])) {
-                        $ultimasMarcas[$f->id_material] = $f->codigo;
+                    if (!isset($ultimosCodigos[$f->id_material])) {
+                        $ultimosCodigos[$f->id_material] = $f->codigo;
                     }
                 }
             }
@@ -188,14 +188,14 @@ class RepuestosController extends Controller
 
                 $info   = UnidadMedida::where('id', $row->id_medida)->first();
                 $medida = $info ? '- ' . $info->nombre : '';
-                $marca  = isset($ultimasMarcas[$row->id]) ? '| Marca: ' . $ultimasMarcas[$row->id] : '';
+                $codigo = isset($ultimosCodigos[$row->id]) ? '| Código: ' . $ultimosCodigos[$row->id] : '';
 
-                $texto = trim($row->nombre . ' ' . $medida . ' ' . $marca);
+                $texto = trim($row->nombre . ' ' . $medida . ' ' . $codigo);
 
                 $output .= '
-                <li onclick="modificarValor(this)" id="' . $row->id . '">
-                    <a href="#" style="margin-left: 3px">' . e($texto) . '</a>
-                </li>';
+            <li onclick="modificarValor(this)" id="' . $row->id . '">
+                <a href="#" style="margin-left: 3px">' . e($texto) . '</a>
+            </li>';
 
                 // Si solo hay 1 fila no se muestra el hr
                 if ($total > 1) {
